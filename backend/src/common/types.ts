@@ -5,6 +5,36 @@ export enum Role {
     user = 'user',
   
   }
+
+  export enum TaskStatus {
+
+    new = 'new',
+  
+    inProgress = 'inProgress',
+  
+    done = 'done',
+  
+  }
+
+  export type TaskDto = {
+
+    id: number;
+  
+    title: string;
+  
+    status: TaskStatus;
+
+    assignee: SecuredUser;
+  
+    createdAt: Date;
+  
+    author: SecuredUser;
+  
+  };
+  
+   
+  
+  export type CreateUpdateTaskDto = Omit<TaskDto, 'id' | 'createdAt' | 'author'>;
   
    
   
@@ -19,6 +49,7 @@ export enum Role {
   }
   
   export interface LoginResponseDto {
+    userId: number;
   
     access_token: string;
   

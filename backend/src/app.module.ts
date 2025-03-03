@@ -14,7 +14,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { User } from '../orm/user.entity';
 
- 
+import { TasksModule } from 'src/tasks/tasks.module';
+
+import { Task } from './orm/task.entity';
 
 @Module({
 
@@ -50,7 +52,7 @@ import { User } from '../orm/user.entity';
 
         cache: true,
 
-        entities: [User],
+        entities: [User, Task],
 
         maxQueryExecutionTime: 5000,
 
@@ -70,7 +72,8 @@ import { User } from '../orm/user.entity';
 
     }),
 
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Task]),
+    TasksModule,
 
   ],
 
