@@ -7,6 +7,9 @@ export class CreateUserDto {
     @IsNotEmpty({message: 'Пожалуйста, укажите своё имя'})
     firstname: string
 
+    @IsNotEmpty({message: 'Укажите группу'})
+    group: string
+
     @IsNotEmpty({message: 'Пожалуйста, укажите свою фамилию'})
     lastname: string
 

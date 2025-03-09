@@ -46,8 +46,8 @@ export default defineConfig((/* ctx */) => {
         // extendTsConfig (tsConfig) {}
       },
 
-      vueRouterMode: 'hash', // available values: 'hash', 'history'
-      // vueRouterBase,
+      vueRouterMode: 'history', // available values: 'hash', 'history'
+      vueRouterBase: '/ITrialto',
       // vueDevtools,
       // vueOptionsAPI: false,
 
@@ -79,7 +79,11 @@ export default defineConfig((/* ctx */) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#devserver
     devServer: {
       // https: true,
-      open: true // opens browser window automatically
+      open: {app: {
+        name: 'chrome',
+        arguments: ['http://localhost:9000/ITrialto/auth/'],
+      }}, 
+      port: 9000
     },
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#framework

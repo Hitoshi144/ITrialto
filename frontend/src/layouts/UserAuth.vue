@@ -7,18 +7,21 @@
     </div>
 
     <transition appear name="fade" mode="out-in">
-    <q-card flat bordered class="auth-card" v-if="isAuth">
+    <q-card class="auth-card bg-blue-1" v-if="isAuth">
       <h4 class="text-center text-uppercase text-bold">Вход</h4>
       <div class="input-auth">
         <div class="inp-mail">
-      <q-input standout="bg-blue-9 text-white" v-model="mail" type="email" placeholder="Почта">
+      <q-input standout="bg-primary text-white" v-model="mail" type="email" placeholder="Почта"
+      :rules="[val => (val.includes('tyuiu.ru') && val.includes('@')) || 'Введите почту ТИУ']"
+      lazy-rules
+      >
         <template v-slot:before>
           <q-icon name="mail" />
         </template>
       </q-input>
       </div>
       <div class="inp-pass">
-      <q-input standout="bg-blue-9 text-white" v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Пароль">
+      <q-input standout="bg-primary text-white" v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Пароль">
         <template v-slot:before>
           <q-icon name="password" />
         </template>        
@@ -31,7 +34,7 @@
         </template>
       </q-input>
       <div class="retry-pass">
-        <q-input standout="bg-blue-9 text-white" v-model="retryPassword" :type="isPwd ? 'password' : 'text'" placeholder="Повторите пароль">
+        <q-input standout="bg-primary text-white" v-model="retryPassword" :type="isPwd ? 'password' : 'text'" placeholder="Повторите пароль">
           <template v-slot:append>
           <q-icon
             :name="isPwd ? 'visibility_off' : 'visibility'"
@@ -43,7 +46,7 @@
       </div>
         </div>
         <div class="auth-btn">
-        <q-btn unelevated color="blue-9" label="Войти" text-color="white" padding="10px 50%"/>
+        <q-btn unelevated color="primary" label="Войти" text-color="white" padding="10px 50%"/>
         </div>
       <div class="newReg">
         <button class="newReg-btn" type="button" v-on:click="isAuth = ! isAuth">Создать новый аккаунт</button>
@@ -51,30 +54,33 @@
       </div>
     </q-card>
 
-    <q-card flat bordered class="auth-card" v-else-if="isAuth == false">
+    <q-card class="auth-card bg-blue-1" v-else-if="isAuth == false">
       <h4 class="text-center text-uppercase text-bold">Регистрация</h4>
       <div class="input-auth">
       <div class="inp-first-name">
-        <q-input standout="bg-blue-9 text-white" v-model="firstname" type="text" placeholder="Имя">
+        <q-input standout="bg-primary text-white" v-model="firstname" type="text" placeholder="Имя">
       </q-input>
       </div>
       <div class="inp-last-name">
-        <q-input standout="bg-blue-9 text-white" v-model="lastname" type="text" placeholder="Фамилия">
+        <q-input standout="bg-primary text-white" v-model="lastname" type="text" placeholder="Фамилия">
       </q-input>
       </div>
       <div class="inp-group">
-        <q-input standout="bg-blue-9 text-white" v-model="group" type="text" placeholder="Группа">
+        <q-input standout="bg-primary text-white" v-model="group" type="text" placeholder="Группа">
       </q-input>
       </div>
         <div class="inp-mail">
-      <q-input standout="bg-blue-9 text-white" v-model="mail" type="email" placeholder="Почта">
+      <q-input standout="bg-primary text-white" v-model="mail" type="email" placeholder="Почта"
+      :rules="[val => (val.includes('tyuiu.ru') && val.includes('@')) || 'Введите почту ТИУ']"
+      lazy-rules
+      >
         <template v-slot:before>
           <q-icon name="mail" />
         </template>
       </q-input>
       </div>
       <div class="inp-pass">
-      <q-input standout="bg-blue-9 text-white" v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Пароль">
+      <q-input standout="bg-primary text-white" v-model="password" :type="isPwd ? 'password' : 'text'" placeholder="Пароль">
         <template v-slot:before>
           <q-icon name="password" />
         </template>        
@@ -87,7 +93,7 @@
         </template>
       </q-input>
       <div class="retry-pass">
-        <q-input standout="bg-blue-9 text-white" v-model="retryPassword" :type="isPwd ? 'password' : 'text'" placeholder="Повторите пароль">
+        <q-input standout="bg-primary text-white" v-model="retryPassword" :type="isPwd ? 'password' : 'text'" placeholder="Повторите пароль">
           <template v-slot:append>
           <q-icon
             :name="isPwd ? 'visibility_off' : 'visibility'"
@@ -99,7 +105,7 @@
       </div>
         </div>
         <div class="auth-btn">
-        <q-btn unelevated color="blue-9" label="Создать аккаунт" text-color="white" padding="10px 50%" no-wrap/>
+        <q-btn unelevated color="primary" label="Создать аккаунт" text-color="white" padding="10px 50%" no-wrap @click="registrationHandler"/>
         </div>
         <div class="newReg">
         <button class="newReg-btn" type="button" v-on:click="isAuth = ! isAuth">Войти в аккаунт</button>
@@ -113,7 +119,10 @@
 </template>
 
 <script setup lang="ts">
-  import {ref} from 'vue'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { AuthService } from 'src/services/auth.service'
+import {ref} from 'vue'
+import { toast } from 'vue3-toastify'
 
   const mail =  ref<string>('')
   const password = ref<string>('')
@@ -135,6 +144,28 @@
         "ITrialto ".repeat(20),
         "ITrialto ".repeat(20),
         "ITrialto ".repeat(20),]
+
+  const registrationHandler = async () => {
+    try {
+      if (password.value !== retryPassword.value) {
+        toast.error('Пароли не совпадают')
+        return
+      }
+
+      const data = await AuthService.registration({firstname: firstname.value, lastname: lastname.value, group: group.value, mail: mail.value, password: password.value})
+      if (data) {
+        toast.success('Аккаунт создан')
+        isAuth.value = !isAuth.value
+      }
+      else {
+        toast.error('Что-то пошло не так')
+      }
+    }
+    catch(err: any) {
+      const error = err.response?.data.message
+      toast.error(error)
+    }
+  }
 </script>
 
 <style>
