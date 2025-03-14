@@ -6,12 +6,30 @@ export interface IUserData {
     password: string
 }
 
+export interface IUserAuthData {
+    mail: string,
+    password: string
+}
+
 export interface IResponse {
-    mail: string | undefined,
-    password: string | undefined,
-    createdAt: string | undefined,
-    updatedAt: string | undefined,
-    __v?: number | undefined,
-    _id?: string | undefined,
-    message: string | undefined,
+    id: number
+    mail: string
+    firstname: string
+    lastname: string
+    group: string
+    phone: string
+    role: string
+    createdAt: string
+    updateAt: string
+    token: string
+}
+
+export interface IUser {
+    id: number
+    mail: string
+    firstname: string
+    lastname: string
+    group: string
+    phone: string
+    role: string
 }

@@ -33,20 +33,10 @@
           />
         </template>
       </q-input>
-      <div class="retry-pass">
-        <q-input standout="bg-primary text-white" v-model="retryPassword" :type="isPwd ? 'password' : 'text'" placeholder="Повторите пароль">
-          <template v-slot:append>
-          <q-icon
-            :name="isPwd ? 'visibility_off' : 'visibility'"
-            class="cursor-pointer"
-            @click="isPwd = !isPwd"
-          />
-          </template>
-      </q-input>
-      </div>
+      
         </div>
         <div class="auth-btn">
-        <q-btn unelevated color="primary" label="Войти" text-color="white" padding="10px 50%"/>
+        <q-btn unelevated color="primary" label="Войти" text-color="white" padding="10px 50%" @click="loginHandler" />
         </div>
       <div class="newReg">
         <button class="newReg-btn" type="button" v-on:click="isAuth = ! isAuth">Создать новый аккаунт</button>
@@ -120,9 +110,15 @@
 
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { setTokenToLocalStorage } from 'src/helpers/localstorage.helper'
 import { AuthService } from 'src/services/auth.service'
 import {ref} from 'vue'
 import { toast } from 'vue3-toastify'
+import { useUserStore } from 'src/store'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
 
   const mail =  ref<string>('')
   const password = ref<string>('')
@@ -163,6 +159,23 @@ import { toast } from 'vue3-toastify'
     }
     catch(err: any) {
       const error = err.response?.data.message
+      toast.error(error)
+    }
+  }
+
+  const loginHandler = async () => {
+    try {
+      const data = await AuthService.login({mail: mail.value, password: password.value})
+
+      if (data) {
+        setTokenToLocalStorage('token', data.token)
+        useUserStore().login(data)
+        await router.push({name: 'Home'})
+      }
+    }
+    catch (err: any) {
+      const error = err.response?.data.message
+      console.log(err)
       toast.error(error)
     }
   }

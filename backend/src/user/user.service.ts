@@ -34,7 +34,7 @@ export class UserService {
 
     const token = this.jwtService.sign({mail: createUserDto.mail})
 
-    return {user, token}
+    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, group: user.group, phone: user.phone, role: user.role, createdAt: user.createAt, updateAt: user.updateAt, token}
   }
 
   async findOne(mail: string) {
