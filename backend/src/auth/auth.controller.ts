@@ -14,6 +14,13 @@ export class AuthController {
     return {
       id: (await result).id,
       mail: (await result).mail,
+      firstname: (await result).firstname,
+      lastname: (await result).lastname,
+      group: (await result).group,
+      phone: (await result).phone,
+      role: (await result).role,
+      createdAt: (await result).createdAt,
+      updateAt: (await result).updateAt,
       token: (await result).token
     }
   }
