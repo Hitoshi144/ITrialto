@@ -4,12 +4,14 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/auth',
     component: () => import('layouts/UserAuth.vue'),
+    meta: {requiresAuth: false}
   },
 
   {
     path: '/Home',
     name: 'Home',
-    component: () => import('pages/ErrorNotFound.vue')
+    component: () => import('pages/ProjectWorkContinue.vue'),
+    meta: {requiresAuth: true}
   },
 
   // Always leave this as last one,
@@ -17,6 +19,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
+    meta: {requiresAuth: false}
   },
 ];
 
