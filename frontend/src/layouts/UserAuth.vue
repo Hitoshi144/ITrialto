@@ -436,4 +436,13 @@ const router = useRouter()
     transform: translateX(-50%); /* Сдвигаем текст на половину его ширины */
   }
 }
+
+.auth-card {
+  border-radius: 25px;
+}
+
+.q-btn {
+  border-radius: 10px;
+}
+
 </style>

@@ -10,9 +10,18 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/Home',
     name: 'Home',
-    component: () => import('pages/ProjectWorkContinue.vue'),
-    meta: {requiresAuth: true}
+    component: () => import('pages/HomePage.vue'),
+    meta: {requiresAuth: true},
+    children: [{
+      path: 'projects',
+      name: 'projects',
+      component: () => import('components/ProjectsTable.vue'),
+      meta: {requiresAuth: true}
+    },
+  ]
   },
+
+  
 
   // Always leave this as last one,
   // but you can also remove it
