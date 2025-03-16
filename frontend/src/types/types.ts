@@ -4,6 +4,7 @@ export interface IUserData {
     group: string,
     mail: string,
     password: string
+    role: string
 }
 
 export interface IUserAuthData {
