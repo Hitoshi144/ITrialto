@@ -4,6 +4,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/auth',
     component: () => import('layouts/UserAuth.vue'),
+    name: 'auth',
     meta: {requiresAuth: false}
   },
 

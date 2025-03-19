@@ -2,10 +2,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, 
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { UserService } from 'src/user/user.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post('login')
   @UseGuards(LocalAuthGuard)
@@ -27,7 +30,13 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req) {
+    const userMail = req.user.mail
+    const user = await this.userService.findOne(userMail)
+
+    if (!user) {
+      throw new UnauthorizedException('Пользователь не найден')
+    }
+    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, phone: user.phone, role: user.role, group: user.group, createdAt: user.createAt};
   }
 }

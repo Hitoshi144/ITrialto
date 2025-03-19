@@ -37,8 +37,6 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
     await userStore.checkAuth()
 
-    console.log(userStore.isAuth)
-
     if (to.meta.requiresAuth && !userStore.getIsAuth) {
       next('/auth')
     }

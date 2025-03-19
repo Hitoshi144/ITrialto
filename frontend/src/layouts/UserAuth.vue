@@ -231,6 +231,7 @@ import { toast } from 'vue3-toastify'
 import { useUserStore } from 'src/store'
 import { useRouter } from 'vue-router'
 import { validateHeaderName } from 'http'
+import { instance } from 'src/api/axios.api'
 
 const router = useRouter()
 
@@ -256,6 +257,10 @@ const router = useRouter()
         "ITrialto ".repeat(20),
         "ITrialto ".repeat(20),
         "ITrialto ".repeat(20),]
+
+  if (useUserStore().getIsAuth) {
+    void router.push({name :'Home'})
+  }
 
   const registrationHandler = async () => {
     try {
@@ -297,7 +302,6 @@ const router = useRouter()
     }
     catch (err: any) {
       const error = err.response?.data.message
-      console.log(err)
       toast.error(error)
     }
   }
