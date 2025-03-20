@@ -20,7 +20,7 @@
       </div>
       <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[0, 5]">
         <q-list class="bg-secondary">
-          <q-item clickable v-close-popup>
+          <q-item clickable v-close-popup href="Home/profile">
             <q-item-section class="no-select">Профиль</q-item-section>
           </q-item>
           <q-separator />
@@ -138,7 +138,7 @@
   </style>
   
   <script setup lang="ts">
-  import { removeTokenFromLocalStorage } from 'src/helpers/localstorage.helper';
+import { removeTokenFromLocalStorage } from 'src/helpers/localstorage.helper';
 import { useUserStore } from 'src/store';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';

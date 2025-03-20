@@ -5,6 +5,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TeamsModule } from './teams/teams.module';
+import { TeamRequestModule } from './team-request/team-request.module';
 
 @Module({
   imports: [UserModule, AuthModule, ConfigModule.forRoot(),
@@ -19,9 +21,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         database: configService.get('DB_NAME'),
         synchronize: true,
         entities: [__dirname + '/**/*.entity{.js, .ts}'],
+        migrations: [__dirname + '/migrations/*{.js, .ts}'],
       }),
       inject: [ConfigService, ],
     }),
+    TeamsModule,
+    TeamRequestModule,
   ],
   controllers: [AppController],
   providers: [AppService],
