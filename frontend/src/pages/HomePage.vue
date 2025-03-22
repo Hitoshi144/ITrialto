@@ -7,7 +7,8 @@
 
 <style>
 .content {
-  padding-top: 60px;
+  padding-top: 20px;
+  padding-bottom: 0px;
 }
 </style>
 

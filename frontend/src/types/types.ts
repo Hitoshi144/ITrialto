@@ -20,7 +20,7 @@ export interface IResponse {
     group: string
     phone: string
     role: string
-    createdAt: string
+    createAt: string
     updateAt: string
     token: string
 }
@@ -33,4 +33,24 @@ export interface IUser {
     group: string
     phone: string
     role: string
+}
+
+export interface IUserProfile {
+    id: number
+    mail: string
+    firstname: string
+    lastname: string
+    phone: string
+    role: string
+    group: string
+    createAt: string
+    aboutMe: string
+}
+
+export interface IUserUpdate {
+    firstname: string
+    lastname: string
+    phone: string
+    group: string
+    aboutMe: string
 }

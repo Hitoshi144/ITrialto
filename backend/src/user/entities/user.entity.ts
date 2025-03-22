@@ -20,6 +20,9 @@ export class User {
     lastname: string
 
     @Column({default: ''})
+    aboutMe: string
+
+    @Column({default: ''})
     role: string
 
     @Column({default: ''})

@@ -1,11 +1,19 @@
 export interface IUser {
-    id: string
+    id: number
     mail: string
     firstname: string
     lastname: string
     group: string
     phone: string
     role: string
-    createAt: string
-    updateAt: string
+    createAt: Date
+    updateAt: Date
+}
+
+export interface IUpdateUser {
+    firstname: string
+    lastname: string
+    group: string
+    phone: string
+    aboutMe: string
 }

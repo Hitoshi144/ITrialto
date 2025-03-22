@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserService } from 'src/user/user.service';
+import { IUpdateUser, IUser } from 'src/types/types';
 
 @Controller('auth')
 export class AuthController {
@@ -22,7 +23,7 @@ export class AuthController {
       group: (await result)?.group,
       phone: (await result)?.phone,
       role: (await result)?.role,
-      createdAt: (await result)?.createdAt,
+      createdAt: (await result)?.createAt,
       updateAt: (await result)?.updateAt,
       token: (await result)?.token
     }
@@ -37,6 +38,19 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден')
     }
-    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, phone: user.phone, role: user.role, group: user.group, createdAt: user.createAt};
+    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, phone: user.phone, role: user.role, group: user.group, createAt: user.createAt, aboutMe: user.aboutMe};
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@Request() req, @Body() updateData: IUpdateUser) {
+    const userMail = req.user.mail; // Получаем email пользователя из JWT-токена
+    const updatedUser = await this.authService.updateProfile(userMail, updateData);
+
+    if (!updatedUser) {
+      throw new UnauthorizedException('Не удалось обновить данные пользователя');
+    }
+
+    return updatedUser;
   }
 }
