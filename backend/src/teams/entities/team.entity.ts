@@ -1,3 +1,5 @@
+import { ProjectRequest } from "src/project-request/entities/project-request.entity";
+import { Project } from "src/project/entities/project.entity";
 import { TeamRequest } from "src/team-request/entities/team-request.entity";
 import { User } from "src/user/entities/user.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
@@ -26,9 +28,24 @@ export class Team {
     @OneToMany(() => User, (user) => user.team)
     teamMembers: User[];
 
+    @Column({default: 'close'})
+    status: string
+
     @CreateDateColumn()
     createdAt: Date
 
     @OneToMany(() => TeamRequest, (teamRequest) => teamRequest.team)
     teamRequests: TeamRequest[];
+
+    @OneToMany(() => Project, (project) => project.team)
+    projects: Project[];
+
+    @Column({ nullable: true })
+    currentProjectId: number | null; // Проект, над которым сейчас работает команда
+
+    @ManyToOne(() => Project, (project) => project.team)
+    currentProject: Project;
+
+    @OneToMany(() => ProjectRequest, (request) => request.team)
+    projectRequests: ProjectRequest[];
 }

@@ -202,7 +202,7 @@
 
 <script setup lang="ts">
 import { AuthService } from 'src/services/auth.service';
-import { IUserProfile } from 'src/types/types';
+import type { IUserProfile } from 'src/types/types';
 import { onMounted, ref } from 'vue';
 
 const profile = ref<IUserProfile | null>(null);

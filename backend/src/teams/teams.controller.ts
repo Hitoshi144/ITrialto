@@ -56,7 +56,6 @@ export class TeamsController {
 
   @Delete(':teamId/members/:userId')
   @UseGuards(JwtAuthGuard)
-  @UseGuards(JwtAuthGuard)
   async removeMember(
     @Param('teamId') teamId: string,
     @Param('userId') userId: string,
@@ -67,4 +66,24 @@ export class TeamsController {
       throw new BadRequestException(error.message);
     }
   }
+
+  @Patch('open/:id')
+@UseGuards(JwtAuthGuard)
+async openTeam(@Param('id') id: string) {
+  try {
+    return await this.teamsService.openTeam(+id);
+  } catch (error) {
+    throw new BadRequestException(error.message);
+  }
+}
+
+@Patch('close/:id')
+@UseGuards(JwtAuthGuard)
+async closeTeam(@Param('id') id: string) {
+  try {
+    return await this.teamsService.closeTeam(+id);
+  } catch (error) {
+    throw new BadRequestException(error.message);
+  }
+}
 }

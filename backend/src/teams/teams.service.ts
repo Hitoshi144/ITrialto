@@ -18,51 +18,39 @@ export class TeamsService {
   ) {}
 
   async create(createTeamDto: CreateTeamDto) {
-    let teamLeader: User | null;
-
-    try {
-      teamLeader = await this.userRepository.findOne({
-        where: { id: createTeamDto.teamLeaderId },
-      });
-
-      if (!teamLeader) {
-        throw new BadRequestException(`User with id ${createTeamDto.teamLeaderId} not found`);
-      }
-    } catch (error) {
-      throw new BadRequestException(error.message);
+    const teamLeader = await this.userRepository.findOne({
+      where: { id: createTeamDto.teamLeaderId },
+    });
+  
+    if (!teamLeader) {
+      throw new BadRequestException(`User with id ${createTeamDto.teamLeaderId} not found`);
     }
-
+  
     const teamExists = await this.teamRepository.findOne({
       where: { title: createTeamDto.title },
     });
-
+  
     if (teamExists) {
-      throw new BadRequestException('Команда с таким названием уже существует');
+      throw new BadRequestException('Team with this title already exists');
     }
-
+  
     const team = await this.teamRepository.save({
       title: createTeamDto.title,
       description: createTeamDto.description,
       teamLeader,
       teamLeaderId: createTeamDto.teamLeaderId,
       members: [],
+      status: 'close' // По умолчанию новая команда закрыта
     });
-
+  
     if (!teamLeader.leaderOfTeams) {
       teamLeader.leaderOfTeams = [];
     }
-
+  
     teamLeader.leaderOfTeams.push(team.id);
-
     await this.userRepository.save(teamLeader);
-
-    return {
-      id: team.id,
-      title: team.title,
-      description: team.description,
-      teamLeaderId: team.teamLeaderId,
-      createdAt: team.createdAt,
-    };
+  
+    return team;
   }
 
   async findAll(teamLeaderId: number) {
@@ -163,5 +151,49 @@ export class TeamsService {
     await this.userRepository.save(user);
   
     return { message: `User with id ${userId} has been removed from team ${teamId}` };
+  }
+
+  async openTeam(teamId: number) {
+    const team = await this.teamRepository.findOne({
+      where: {id: Number(teamId)},
+    })
+
+    if (!team) {
+      throw new BadRequestException(`Команда с id: ${teamId} не найдена`)
+    }
+
+    if (team.status === 'open') {
+      throw new BadRequestException(`Команда уже открыта`);
+    }
+  
+    team.status = 'open';
+    await this.teamRepository.save(team);
+  
+    return { 
+      message: `Команда "${team.title}" теперь открыта для вступления`,
+      team 
+    }
+  }
+
+  async closeTeam(teamId: number) {
+    const team = await this.teamRepository.findOne({
+      where: { id: teamId },
+    });
+  
+    if (!team) {
+      throw new BadRequestException(`Команда с id: ${teamId} не найдена`);
+    }
+  
+    if (team.status === 'close') {
+      throw new BadRequestException(`Команда уже закрыта`);
+    }
+  
+    team.status = 'close';
+    await this.teamRepository.save(team);
+  
+    return { 
+      message: `Команда "${team.title}" теперь закрыта для вступления`,
+      team 
+    }
   }
 }

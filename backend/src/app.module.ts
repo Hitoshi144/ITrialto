@@ -7,6 +7,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TeamsModule } from './teams/teams.module';
 import { TeamRequestModule } from './team-request/team-request.module';
+import { CreateTeamRequestModule } from './create-team-request/create-team-request.module';
+import { ProjectModule } from './project/project.module';
+import { ProjectRequestModule } from './project-request/project-request.module';
 
 @Module({
   imports: [UserModule, AuthModule, ConfigModule.forRoot(),
@@ -27,6 +30,9 @@ import { TeamRequestModule } from './team-request/team-request.module';
     }),
     TeamsModule,
     TeamRequestModule,
+    CreateTeamRequestModule,
+    ProjectModule,
+    ProjectRequestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

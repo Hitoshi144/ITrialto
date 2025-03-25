@@ -26,5 +26,6 @@ import { TeamRequest } from 'src/team-request/entities/team-request.entity';
   ],
   controllers: [TeamsController],
   providers: [TeamsService, TeamRequestService],
+  exports: [TeamsService]
 })
 export class TeamsModule {}

@@ -1,3 +1,5 @@
+import { CreateTeamRequest } from "src/create-team-request/entities/create-team-request.entity";
+import { Project } from "src/project/entities/project.entity";
 import { TeamRequest } from "src/team-request/entities/team-request.entity";
 import { Team } from "src/teams/entities/team.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
@@ -51,4 +53,10 @@ export class User {
 
     @OneToMany(() => TeamRequest, (teamRequest) => teamRequest.user)
     teamRequests: TeamRequest[];
+
+    @OneToMany(() => CreateTeamRequest, (request) => request.creator)
+    createTeamRequests: CreateTeamRequest[];
+
+    @OneToMany(() => Project, (project) => project.user)
+    projects: Project[];
 }
