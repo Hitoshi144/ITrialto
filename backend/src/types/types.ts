@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 export interface IUser {
     id: number
     mail: string
@@ -17,3 +19,12 @@ export interface IUpdateUser {
     phone: string
     aboutMe: string
 }
+
+export interface RequestWithUser extends Request {
+    user: {
+      id: number;
+      mail?: string;
+      firstname?: string;
+      lastname?: string;
+    };
+  }

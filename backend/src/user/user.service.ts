@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import * as argon2 from 'argon2'
 import { JwtService } from '@nestjs/jwt';
 import { IUpdateUser, IUser } from 'src/types/types';
+import sharp from 'sharp';
 
 @Injectable()
 export class UserService {
@@ -52,5 +53,12 @@ export class UserService {
       throw new NotFoundException('Пользователь не найден');
     }
     return user;
+  }
+
+  async processAvatar(inputPath: string, outputPath: string): Promise<void> {
+    await sharp(inputPath)
+      .resize(50, 50)
+      .toFormat('jpeg')
+      .toFile(outputPath);
   }
 }
