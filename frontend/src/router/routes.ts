@@ -25,6 +25,18 @@ const routes: RouteRecordRaw[] = [
       component: () => import('components/ProfilePage.vue'),
       meta: {requiresAuth: true}
     },
+    {
+      path: 'projects-exchange',
+      name: 'projects-exchange',
+      component: () => import('pages/ProjectWorkContinue.vue'),
+      meta: {requiresAuth: true}
+    },
+    {
+      path: 'teams-registry',
+      name: 'teams-registry',
+      component: () => import('pages/ProjectWorkContinue.vue'),
+      meta: {requiresAuth: true}
+    },
   ],
   },
 

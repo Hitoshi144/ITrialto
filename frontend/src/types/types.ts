@@ -20,6 +20,7 @@ export interface IResponse {
     group: string
     phone: string
     role: string
+    aboutMe: string
     createAt: string
     updateAt: string
     token: string
@@ -33,6 +34,8 @@ export interface IUser {
     group: string
     phone: string
     role: string
+    aboutMe: string
+    hasAvatar?: boolean
 }
 
 export interface IUserProfile {

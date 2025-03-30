@@ -7,7 +7,7 @@
     </div>
 
     <transition appear name="slide" mode="out-in">
-    <q-card class="auth-card bg-blue-1" v-if="isAuth">
+    <q-card flat class="auth-card" v-if="isAuth">
       <h4 class="text-center text-uppercase text-bold">Вход</h4>
       <div class="input-auth">
         <div class="inp-mail">
@@ -44,7 +44,7 @@
       </div>
     </q-card>
 
-    <q-card class="auth-card bg-blue-1" v-else-if="isAuth == false" >
+    <q-card flat class="auth-card" v-else-if="isAuth == false" >
       <h4 class="text-center text-uppercase text-bold">Регистрация</h4>
       <q-tabs class="text-primary" v-model="selectedRole">
         <q-tab name="parther" label="Партнер" />
@@ -297,7 +297,7 @@ const router = useRouter()
       if (data) {
         setTokenToLocalStorage('token', data.token)
         useUserStore().login(data)
-        await router.push({name: 'Home'})
+        await router.push({name: 'projects-exchange'})
       }
     }
     catch (err: any) {
@@ -360,6 +360,7 @@ const router = useRouter()
   .newReg-btn {
     border: none;
     background-color: transparent;
+    transition: color 0.3s ease;
   }
 
   .newReg-btn:hover {
@@ -443,6 +444,10 @@ const router = useRouter()
 
 .auth-card {
   border-radius: 25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(141, 183, 202, 0.342);
 }
 
 .q-btn {

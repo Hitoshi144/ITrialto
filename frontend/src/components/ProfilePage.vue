@@ -1,14 +1,25 @@
 <template>
     <div class="profile-component">
         <div class="card">
-            <h3 style="margin: 0px; text-align: center;
+            <h3 style="text-align: center;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             color: rgba(80, 147, 192, 1);
             font-weight: 500;
             ">Профиль</h3>
             <div class="card-top">
                 <div class="avatar">
-                    <img src="../assets/avatar_alt.png" class="user-avatar"/>
+                  <input 
+                  type="file" 
+                  ref="fileInput" 
+                  accept="image/*" 
+                  @change="handleFileUpload" 
+                  style="display: none"
+                       >
+                       <img 
+                         :src="avatarUrl || avatarAlt" 
+                         class="user-avatarr"
+                         @click="fileInput?.click()"
+                       />
                     <p style="
                     background-color: #41789C;
                     margin-top: 5px;
@@ -20,10 +31,10 @@
                     ">{{ rolesInterpritation[role as keyof typeof rolesInterpritation || 'withoutRole']}}</p>
                 </div>
                 <div class="main-data">
-                    <q-input standout="bg-primary text-white" v-model="mail" label="Почта" type="email" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
+                    <q-input standout="bg-primary text-white" v-model="mail" label="Почта" type="email" style="margin-top: 20px; margin-bottom: 20px;" readonly />
                     <q-input standout="bg-primary text-white" v-model="firstname" label="Имя" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
                     <q-input standout="bg-primary text-white" v-model="lastname" label="Фамилия" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
-                    <q-input standout="bg-primary text-white" v-model="group" label="Группа" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
+                    <q-input standout="bg-primary text-white" v-model="group" label="Группа" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" v-if="role === 'student'" />
                     <q-input standout="bg-primary text-white" v-model="phone" label="Телефон" type="tel" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
                     <p style="padding-left: 5px;">Дата регистрации: {{ createAt }}</p>
                 </div>
@@ -75,8 +86,22 @@
     flex-direction: column;
     width: 100%;
     max-width: 100vw;
-    height: 95vh;
+    min-height: 95vh;
+    padding: 20px 0;
     margin-top: 25px;
+    background-color: #E0EEF8;
+    opacity: 1;
+    z-index: -999;
+    background: 
+  radial-gradient(circle, transparent 20%, rgba(224, 238, 248, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent),
+  radial-gradient(circle, transparent 20%, rgba(224, 238, 248, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent) 15px 15px,
+  linear-gradient(rgba(65, 120, 156, 0.7) 1.2px, transparent 1.2px) 0 -0.6px,
+  linear-gradient(90deg, rgba(65, 120, 156, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
+background-size: 30px 30px, 30px 30px, 15px 15px, 15px 15px;
+}
+
+h3 {
+  margin: 0px
 }
 
 .card {
@@ -84,6 +109,10 @@
     border-radius: 25px;
     border-color: rgba(80, 147, 192, 0.3);
     padding: 50px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid rgba(141, 183, 202, 0.342);
 }
 
 .card-top {
@@ -100,9 +129,18 @@
     margin-right: 100px;
 }
 
-.user-avatar {
-    height: 100px;
-    width: auto;
+.user-avatarr {
+  height: 100px;
+  width: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 3px solid rgba(80, 147, 192, 0.5);
+  transition: border-color 0.3s ease;
+}
+
+.user-avatarr:hover {
+  border-color: rgba(80, 147, 192, 1);
 }
 
 .main-data {
@@ -196,6 +234,16 @@
         flex-direction: column;
         justify-content: center;
     }
+
+    h3 {
+      margin-bottom: 25px;
+    }
+
+    .profile-component {
+      margin-top: 40px; /* Уменьшаем отступ сверху для мобильных */
+        padding-bottom: 60px; /* Добавляем отступ снизу */
+        min-height: calc(100vh - 60px); /* Учитываем высоту шапки */
+    }
 }
 
 </style>
@@ -204,8 +252,14 @@
 import { AuthService } from 'src/services/auth.service';
 import type { IUserProfile } from 'src/types/types';
 import { onMounted, ref } from 'vue';
+import { useUserStore } from 'src/store';
+import avatarAlt from '../assets/avatar_alt.png';
 
 const profile = ref<IUserProfile | null>(null);
+
+const userStore = useUserStore();
+const fileInput = ref<HTMLInputElement | null>(null);
+const avatarUrl = ref<string | null>(null);
 
 const mail = ref<string>('');
 const firstname = ref<string>('');
@@ -245,14 +299,51 @@ onMounted(async () => {
 
         const createdAtDate = new Date(createdDate.value);
         createAt.value = `${createdAtDate.getDate()}.${createdAtDate.getMonth() + 1}.${createdAtDate.getFullYear()}, ${createdAtDate.getHours()}:${createdAtDate.getMinutes()}`;
+
+        await loadAvatar(data.id);
     }
 });
+
+const loadAvatar = async (userId: number) => {
+  try {
+    const response = await AuthService.getAvatar(userId);
+    if (response) {
+      avatarUrl.value = URL.createObjectURL(response);
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки аватара:', error);
+  }
+};
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', target.files[0]);
+
+      await AuthService.uploadAvatar(formData);
+      
+      // Обновляем аватар
+      if (profile.value) {
+        await loadAvatar(profile.value.id);
+      }
+      
+      // Обновляем хранилище (теперь метод существует)
+      userStore.updateUser({ hasAvatar: true });
+      window.location.reload()
+    } catch (error) {
+      console.error('Ошибка загрузки аватара:', error);
+    }
+  }
+};
 
 const startEditing = () => {
     isEditing.value = true;
 };
 
 const saveChanges = async () => {
+
     if (profile.value) {
         const updatedData = {
             ...profile.value,
@@ -269,6 +360,16 @@ const saveChanges = async () => {
         if (response) {
             profile.value = response;
             originalData.value = { ...response }; // Обновляем исходные данные
+
+            userStore.updateUser({
+        mail: response.mail,
+        firstname: response.firstname,
+        lastname: response.lastname,
+        group: response.group,
+        phone: response.phone,
+        aboutMe: response.aboutMe
+      });
+
             isEditing.value = false; // Выходим из режима редактирования
         }
     }

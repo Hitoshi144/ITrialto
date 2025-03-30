@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 import { instance } from "src/api/axios.api";
 import type { IResponse, IUserAuthData, IUserData, IUserProfile, IUserUpdate } from "src/types/types";
 
@@ -22,5 +23,25 @@ export const AuthService = {
         return data
     },
 
-    async getMe() {},
+    async uploadAvatar(formData: FormData): Promise<void> {
+        await instance.post('/user/avatar', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+      },
+
+      async getAvatar(userId: number): Promise<Blob | null> {
+        try {
+          const response = await instance.get(`/user/avatar/${userId}`, {
+            responseType: 'blob'
+          });
+          return response.data;
+        } catch (error: unknown) {
+            if (error instanceof AxiosError && error.response?.status === 404) {
+              return null;
+            }
+            throw error;
+          }
+      }
 }

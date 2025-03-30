@@ -20,6 +20,12 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('token')
     },
 
+    updateUser(updatedData: Partial<IUser>) {
+      if (this.user) {
+        this.user = { ...this.user, ...updatedData };
+      }
+    },
+
     async checkAuth() {
       const token = localStorage.getItem('token')
 
