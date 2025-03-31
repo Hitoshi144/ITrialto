@@ -68,4 +68,9 @@ async uploadAvatar(@UploadedFile() file: Express.Multer.File) {
       disposition: `inline; filename="${userId}.jpg"`
     });
   }
+
+  @Get(':userId')
+  async getUser(@Param('userId') userId: number) {
+    return await this.userService.getUser(userId)
+  }
 }

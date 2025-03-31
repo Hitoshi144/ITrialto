@@ -93,10 +93,10 @@
     opacity: 1;
     z-index: -999;
     background: 
-  radial-gradient(circle, transparent 20%, rgba(224, 238, 248, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent),
-  radial-gradient(circle, transparent 20%, rgba(224, 238, 248, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent) 15px 15px,
-  linear-gradient(rgba(65, 120, 156, 0.7) 1.2px, transparent 1.2px) 0 -0.6px,
-  linear-gradient(90deg, rgba(65, 120, 156, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
+  radial-gradient(circle, transparent 20%, rgba(253, 254, 255, 0.7) 20%, rgba(245, 249, 252, 0.7) 80%, transparent 80%, transparent),
+  radial-gradient(circle, transparent 20%, rgba(231, 237, 241, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent) 15px 15px,
+  linear-gradient(rgba(147, 177, 197, 0.7) 1.2px, transparent 1.2px) 0 -0.6px,
+  linear-gradient(90deg, rgba(138, 181, 209, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
 background-size: 30px 30px, 30px 30px, 15px 15px, 15px 15px;
 }
 
@@ -298,7 +298,8 @@ onMounted(async () => {
         role.value = data.role;
 
         const createdAtDate = new Date(createdDate.value);
-        createAt.value = `${createdAtDate.getDate()}.${createdAtDate.getMonth() + 1}.${createdAtDate.getFullYear()}, ${createdAtDate.getHours()}:${createdAtDate.getMinutes()}`;
+        const pad = (num: number) => num.toString().padStart(2, '0');
+        createAt.value = `${pad(createdAtDate.getDate())}.${pad(createdAtDate.getMonth() + 1)}.${createdAtDate.getFullYear()}, ${pad(createdAtDate.getHours())}:${pad(createdAtDate.getMinutes())}`
 
         await loadAvatar(data.id);
     }

@@ -57,3 +57,14 @@ export interface IUserUpdate {
     group: string
     aboutMe: string
 }
+
+export interface ITeam {
+    id: number
+    title: string
+    description: string
+    teamLeaderId: number
+    members: Array<string>
+    status: string
+    createdAt: string
+    currentProjectId: number
+}

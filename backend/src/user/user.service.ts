@@ -61,4 +61,10 @@ export class UserService {
       .toFormat('jpeg')
       .toFile(outputPath);
   }
+
+  async getUser(userId: number) {
+    const user = await this.userRepository.findOne({where: {id: userId}})
+
+    return user
+  }
 }

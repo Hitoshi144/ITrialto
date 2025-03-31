@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = [
     {
       path: 'teams-registry',
       name: 'teams-registry',
-      component: () => import('pages/ProjectWorkContinue.vue'),
+      component: () => import('../components/TeamsRegistryPage.vue'),
       meta: {requiresAuth: true}
     },
   ],
