@@ -18,9 +18,26 @@ export class TeamsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(@Request() req) {
+  async findAllByLeaderId(@Request() req) {
     const teamLeaderId = req.user.id
-    return await this.teamsService.findAll(teamLeaderId);
+    return await this.teamsService.findAllByLeaderId(teamLeaderId);
+  }
+
+  @Get('members/:id')
+  @UseGuards(JwtAuthGuard)
+  async getTeamMembers(@Param('id') id: number) {
+    try {
+      return await this.teamsService.getTeamMembers(+id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
+  @Get('all')
+  @UseGuards(JwtAuthGuard)
+  async findAll() {
+    return await this.teamsService.findAll()
   }
 
   @Get(':id')

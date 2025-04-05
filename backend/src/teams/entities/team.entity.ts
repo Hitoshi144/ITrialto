@@ -2,7 +2,7 @@ import { ProjectRequest } from "src/project-request/entities/project-request.ent
 import { Project } from "src/project/entities/project.entity";
 import { TeamRequest } from "src/team-request/entities/team-request.entity";
 import { User } from "src/user/entities/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Team {
@@ -25,7 +25,8 @@ export class Team {
     @Column('int', { array: true, nullable: true })
     members: number[];
 
-    @OneToMany(() => User, (user) => user.team)
+    @ManyToMany(() => User, (user) => user.teams)
+    @JoinTable()
     teamMembers: User[];
 
     @Column({default: 'close'})

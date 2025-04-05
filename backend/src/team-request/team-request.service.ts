@@ -55,32 +55,39 @@ export class TeamRequestService {
     const { status } = updateTeamRequestDto;
   
     const teamRequest = await this.teamRequestRepository.findOne({
-      where: { id },
-      relations: ['user', 'team'],
+        where: { id },
+        relations: ['user', 'team', 'team.teamMembers'], // Изменили relations
     });
+  
     if (!teamRequest) {
-      throw new NotFoundException(`Request with id ${id} not found`);
+        throw new NotFoundException(`Request with id ${id} not found`);
+    }
+    else if (teamRequest.status === "approved") {
+      throw new BadRequestException("Заявка уже одобрена")
+    }
+    else if (teamRequest.status === "rejected") {
+      throw new BadRequestException("Заявка уже отклонена")
     }
   
     teamRequest.status = status;
     await this.teamRequestRepository.save(teamRequest);
   
     if (status === 'approved') {
-      const team = teamRequest.team;
-      const user = teamRequest.user;
+        const team = teamRequest.team;
+        const user = teamRequest.user;
   
-      if (!team.members) {
-        team.members = [];
-      }
-      team.members.push(user.id);
-      await this.teamRepository.save(team);
-  
-      user.teamId = team.id;
-      await this.userRepository.save(user);
+        if (!team.teamMembers.some(member => member.id === user.id)) {
+            if (!team.teamMembers) {
+                team.teamMembers = [];
+            }
+            team.teamMembers.push(user);
+            team.members.push(user.id)
+            await this.teamRepository.save(team);
+        }
     }
   
     return teamRequest;
-  }
+}
 
   async deleteRequestsByTeamId(teamId: number) {
     await this.teamRequestRepository.delete({ teamId });

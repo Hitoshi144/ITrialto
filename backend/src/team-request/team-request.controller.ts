@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Request, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Request, Delete, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { TeamRequestService } from './team-request.service';
 import { CreateTeamRequestDto } from './dto/create-team-request.dto';
 import { UpdateTeamRequestDto } from './dto/update-team-request.dto';
@@ -23,6 +23,7 @@ export class TeamRequestController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe())
   async updateRequestStatus(
     @Param('id') id: string,
     @Body() updateTeamRequestDto: UpdateTeamRequestDto,

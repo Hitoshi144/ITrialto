@@ -4,7 +4,7 @@ import { UpdateTeamDto } from './dto/update-team.dto';
 import { Team } from './entities/team.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { EntityManager, In, Repository } from 'typeorm';
+import { ArrayContains, EntityManager, In, Like, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { TeamRequestService } from 'src/team-request/team-request.service';
 
@@ -53,10 +53,14 @@ export class TeamsService {
     return team;
   }
 
-  async findAll(teamLeaderId: number) {
+  async findAllByLeaderId(teamLeaderId: number) {
     return await this.teamRepository.find({where: {
       teamLeaderId: teamLeaderId
     }})
+  }
+
+  async findAll() {
+    return await this.teamRepository.find()
   }
 
   async findOne(id: number) {
@@ -82,76 +86,65 @@ export class TeamsService {
 
   async remove(id: number) {
     return this.teamRepository.manager.transaction(async (entityManager: EntityManager) => {
-      // Находим команду
-      const team = await entityManager.findOne(Team, {
-        where: { id },
-        relations: ['teamLeader'], // Загружаем лидера команды
-      });
-  
-      if (!team) {
-        throw new NotFoundException(`Team with id ${id} not found`);
-      }
-  
-      // Находим лидера команды
-      const teamLeader = await entityManager.findOne(User, {
-        where: { id: team.teamLeaderId },
-      });
-  
-      // Обновляем поле leaderOfTeams у лидера команды
-      if (teamLeader && teamLeader.leaderOfTeams) {
-        teamLeader.leaderOfTeams = teamLeader.leaderOfTeams.filter(
-          (teamId) => teamId !== id,
-        );
-        await entityManager.save(User, teamLeader);
-      }
-  
-      // Удаляем все запросы на вступление, связанные с этой командой
-      await this.teamRequestService.deleteRequestsByTeamId(id);
-  
-      // Обновляем поле teamId у всех участников команды
-      if (team.members && team.members.length > 0) {
-        const users = await entityManager.find(User, {
-          where: { id: In(team.members) }, // Используем In для поиска участников
+        const team = await entityManager.findOne(Team, {
+            where: { id },
+            relations: ['teamLeader', 'teamMembers'], // Изменили relations
         });
-  
-        for (const user of users) {
-          user.teamId = null; // Устанавливаем teamId в null
-          await entityManager.save(User, user);
-        }
-      }
-  
-      // Удаляем команду
-      await entityManager.remove(Team, team);
-  
-      return { message: `Team with id ${id} has been deleted` };
-    });
-  }
 
-  async removeMember(teamId: number, userId: number) {
+        if (!team) {
+            throw new NotFoundException(`Team with id ${id} not found`);
+        }
+
+        // Обновляем leaderOfTeams у лидера
+        if (team.teamLeader && team.teamLeader.leaderOfTeams) {
+            team.teamLeader.leaderOfTeams = team.teamLeader.leaderOfTeams.filter(
+                teamId => teamId !== id,
+            );
+            await entityManager.save(User, team.teamLeader);
+        }
+
+        await this.teamRequestService.deleteRequestsByTeamId(id);
+        await entityManager.remove(Team, team);
+
+        return { message: `Team with id ${id} has been successfully deleted` };
+    });
+}
+
+async removeMember(teamId: number, userId: number) {
     const team = await this.teamRepository.findOne({
-      where: { id: teamId },
+        where: { id: teamId },
+        relations: ['teamMembers'], // Изменили relations
     });
     if (!team) {
-      throw new NotFoundException(`Team with id ${teamId} not found`);
+        throw new NotFoundException(`Team with id ${teamId} not found`);
     }
-  
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with id ${userId} not found`);
+
+    const memberIndex = team.teamMembers.findIndex(member => member.id === userId);
+    if (memberIndex === -1) {
+        throw new BadRequestException(`User with id ${userId} is not a member of team ${teamId}`);
     }
-  
-    if (!team.members.includes(userId)) {
-      throw new BadRequestException(`User with id ${userId} is not a member of team ${teamId}`);
-    }
-  
-    team.members = team.members.filter((memberId) => memberId !== userId);
-    await this.teamRepository.save(team);
-  
-    user.teamId = null;
-    await this.userRepository.save(user);
-  
-    return { message: `User with id ${userId} has been removed from team ${teamId}` };
+
+    team.teamMembers.splice(memberIndex, 1);
+    if (team.members && Array.isArray(team.members)) {
+      team.members = team.members.filter(id => id !== userId);
   }
+    await this.teamRepository.save(team);
+
+    return { message: `User with id ${userId} has been removed from team ${teamId}` };
+}
+
+async getTeamMembers(teamId: number) {
+    const team = await this.teamRepository.findOne({
+        where: { id: teamId },
+        relations: ['teamMembers'], // Получаем участников команды
+    });
+    
+    if (!team) {
+        throw new NotFoundException(`Team with id ${teamId} not found`);
+    }
+
+    return team.teamMembers;
+}
 
   async openTeam(teamId: number) {
     const team = await this.teamRepository.findOne({

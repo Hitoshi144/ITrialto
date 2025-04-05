@@ -2,7 +2,7 @@ import { CreateTeamRequest } from "src/create-team-request/entities/create-team-
 import { Project } from "src/project/entities/project.entity";
 import { TeamRequest } from "src/team-request/entities/team-request.entity";
 import { Team } from "src/teams/entities/team.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class User {
@@ -39,11 +39,9 @@ export class User {
     @UpdateDateColumn()
     updateAt: Date
 
-    @Column({ nullable: true })
-    teamId: number | null;
-
-    @ManyToOne(() => Team, (team) => team.members)
-    team: Team;
+    @ManyToMany(() => Team, (team) => team.members)
+    @JoinTable()
+    teams: Team[];
 
     @Column('int', { array: true, nullable: true })
     leaderOfTeams: number[];

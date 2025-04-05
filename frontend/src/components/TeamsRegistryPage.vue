@@ -1,9 +1,34 @@
 <template>
-    <div class="teams_container">
-      <div v-if="loading">Загрузка...</div>
-      <div v-else-if="error">Ошибка при загрузке данных</div>
-      <div v-else-if="!teams">Нет данных о командах</div>
-      <div v-else>
+  <div class="teams_container">
+    <div v-if="loading">Загрузка...</div>
+    <div v-else-if="error">Ошибка при загрузке данных</div>
+    <div v-else-if="!teams">Нет данных о командах</div>
+    <div v-else>
+      <q-input rounded outlined bg-color="grey-1" placeholder="Поиск" v-model="searchRequest" style="margin-top: 50px;">
+      <template v-slot:append>
+          <q-icon name="close" @click="searchRequest = ''" class="cursor-pointer" />
+        </template>
+        </q-input>
+      <div class="content-wrapper">
+      <div class="filters-container">
+        <div class="filters">
+          <p class="filters-title" style="text-align: center;">Фильтры</p>
+          <q-separator />
+          <p class="filters-part" style="text-align: center;"><strong>Приватность</strong></p>
+          <div>
+          <q-checkbox v-model="isOpen" label="Открыта" class="filters-part" />
+          </div>
+          <q-checkbox v-model="isClose" label="Закрыта" class="filters-part" />
+          <q-separator />
+          <p class="filters-part" style="text-align: center;"><strong>Статус</strong></p>
+          <div>
+          <q-checkbox v-model="inSearch" label="В поисках" class="filters-part" />
+          </div>
+          <q-checkbox v-model="inWork" label="В работе" class="filters-part" />
+        </div>
+      </div>
+      
+      <div class="table-container">
         <q-table
           flat
           bordered
@@ -14,8 +39,7 @@
           style="border-radius: 15px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
-    border: 1px solid rgba(141, 183, 202, 0.342);
-    width: 75vw;"
+    border: 1px solid rgba(141, 183, 202, 0.342);"
         >
         <template v-slot:header="props">
           <q-tr :props="props">
@@ -55,7 +79,7 @@
             <q-td colspan="100%">
               <div class="text-left q-pa-md">
                 <div class="team-data-container">
-                <div class="block" style="width: 60%; margin-right: 50px;">
+                <div class="block" style=" margin-right: 50px;">
                 <div class="panel" style="width: 100%;">
                 <p class="teamTitle">{{ props.row.title }}</p>
                 </div>
@@ -63,15 +87,49 @@
                     <p class="description-title"><strong>Описание</strong></p>
                 <p class="description">{{ props.row.description }}</p>
                 </div>
+              </div>
+                <div class="panel team-info" >
+                <p><strong>Тим-лидер:</strong> {{ leaderNames[props.row.teamLeaderId] || 'Загрузка...' }}</p>
+                <p><strong>Дата создания:</strong> {{ dateInterpretation(props.row.createdAt) }}</p>
                 <p><strong>Статус:</strong> {{ props.row.currentProjectId ? "В работе" : "В поисках" }}</p>
                 <p><strong>Приватность:</strong> {{ statusInterpretation[props.row.status] || props.row.status }}</p>
-                <p><strong>Дата создания:</strong> {{ dateInterpretation(props.row.createdAt) }}</p>
-              </div>
-                <div class="panel" style="width: 40%;">
-                <p><strong>Тим-лидер:</strong> {{ leaderNames[props.row.teamLeaderId] || 'Загрузка...' }}</p>
+                <p><strong>Количество участников:</strong> {{ props.row.members.length + 1 }}</p>
                 </div>
               </div>
+
+              <div class="panel members-panel">
+          <p class="members-title" style="text-align: center;">Участники</p>
+          <div class="members-list">
+            <!-- Панель тим-лидера -->
+            <div class="panel member-item" v-if="leaderNames[props.row.teamLeaderId]">
+            <q-badge color="accent" style="align-self: center; margin-bottom: 10px;" class="leader-badge">Тим-лидер</q-badge>
+              <div class="member-info">
+                <div class="member-avatar">
+                  <img :src="avatarUrls[props.row.teamLeaderId] || defaultAvatar" @error="avatarUrls[props.row.teamLeaderId] = defaultAvatar" class="avatar-img">
+                </div>
+                <div class="member-details">
+                  <p class="member-name">{{ leaderNames[props.row.teamLeaderId] }}</p>
+                  <p class="member-email">{{ userEmails[props.row.teamLeaderId] || 'Загрузка...' }}</p>
+                </div>
               </div>
+            </div>
+            
+            <!-- Панели обычных участников -->
+            <div class="panel member-item" v-for="memberId in props.row.members" :key="memberId">
+              <div class="member-info">
+                <div class="member-avatar">
+                  <img :src="avatarUrls[memberId] || defaultAvatar" @error="avatarUrls[memberId] = defaultAvatar" class="avatar-img">
+                </div>
+                <div class="member-details">
+                  <p class="member-name">{{ memberNames[memberId] || 'Загрузка...' }}</p>
+                  <p class="member-email">{{ userEmails[memberId] || 'Загрузка...' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+                
             </q-td>
             
           </q-tr>
@@ -79,10 +137,12 @@
     </q-table>
       </div>
     </div>
-  </template>
+  </div>
+  </div>
+</template>
   
   <script setup lang="ts">
-  import { ref, onMounted } from 'vue';
+  import { ref, onMounted, onUnmounted } from 'vue';
   import { instance } from 'src/api/axios.api';
   import type { ITeam, IUser } from '../types/types';
 
@@ -95,24 +155,64 @@
     open: "Открыта"
   }
 
+  const isOpen = ref<boolean>(false)
+  const isClose = ref<boolean>(false)
+  const inSearch = ref<boolean>(false)
+  const inWork = ref<boolean>(false)
+
+  const searchRequest = ref<string>('')
+
+
   const dateInterpretation = (date: string) => {
     const tempCreatedAt = new Date(date)
     const pad = (num: number) => num.toString().padStart(2, '0');
   return `${pad(tempCreatedAt.getDate())}.${pad(tempCreatedAt.getMonth() + 1)}.${tempCreatedAt.getFullYear()}, ${pad(tempCreatedAt.getHours())}:${pad(tempCreatedAt.getMinutes())}`
   }
 
-  const leaderNames = ref<Record<number, string>>({})
+  const memberNames = ref<Record<number, string>>({});
+  const userEmails = ref<Record<number, string>>({});
+  const leaderNames = ref<Record<number, string>>({});
 
-  const getUser = async (userId: number): Promise<void> => {
-  if (!leaderNames.value[userId]) {
+  const getImageUrl = (name: string) => {
+  return new URL(`../assets/${name}`, import.meta.url).href;
+};
+
+const avatarUrls = ref<Record<number, string>>({});
+const avatarCache = ref<Record<number, string>>({});
+const defaultAvatar = ref(getImageUrl('avatar_alt.png'));
+
+
+const fetchAvatar = async (userId: number): Promise<void> => {
+  try {
+    const response = await instance.get(`user/avatar/${userId}`, {
+      responseType: 'blob'
+    });
+    
+    const avatarUrl = URL.createObjectURL(response.data);
+    avatarCache.value[userId] = avatarUrl;
+    avatarUrls.value[userId] = avatarUrl;
+  } catch (error) {
+    console.error(`Ошибка загрузки аватара для пользователя ${userId}:`, error);
+    avatarUrls.value[userId] = defaultAvatar.value;
+  }
+};
+
+const fetchUserData = async (userId: number): Promise<void> => {
+  if (!memberNames.value[userId] && !userEmails.value[userId] && !leaderNames.value[userId]) {
     try {
       const response = await instance.get<IUser>(`user/${userId}`);
-      leaderNames.value[userId] = `${response.data.firstname} ${response.data.lastname}`;
+      const fullName = `${response.data.firstname} ${response.data.lastname}`;
+      memberNames.value[userId] = fullName;
+      leaderNames.value[userId] = fullName;
+      userEmails.value[userId] = response.data.mail;
     } catch {
-      leaderNames.value[userId] = "Неизвестно";
+      const unknown = "Неизвестно";
+      memberNames.value[userId] = unknown;
+      leaderNames.value[userId] = unknown;
+      userEmails.value[userId] = unknown;
     }
   }
-}
+};
 
   const columns = [
     {
@@ -155,35 +255,88 @@
   ];
   
   onMounted(async () => {
-    try {
-      const response = await instance.get<ITeam[]>('/teams');
-      teams.value = response.data;
+  try {
+    const response = await instance.get<ITeam[]>('/teams/all');
+    teams.value = response.data;
 
-      await Promise.all(
-      teams.value.map(team => getUser(team.teamLeaderId)))
-    } catch (e) {
-      console.error('Ошибка при загрузке команд:', e);
-      error.value = true;
-    } finally {
-      loading.value = false;
-    }
+    const allUserIds = new Set<number>();
+    teams.value.forEach(team => {
+      allUserIds.add(team.teamLeaderId);
+      team.members.forEach(memberId => allUserIds.add(Number(memberId)));
+    });
+
+    await Promise.all([
+      ...Array.from(allUserIds).map(id => fetchUserData(id)),
+      ...Array.from(allUserIds).map(id => fetchAvatar(id))
+    ]);
+  } catch (e) {
+    console.error('Ошибка при загрузке команд:', e);
+    error.value = true;
+  } finally {
+    loading.value = false;
+  }
+});
+
+onUnmounted(() => {
+  // Освобождаем объектные URL для избежания утечек памяти
+  Object.values(avatarCache.value).forEach(url => {
+    URL.revokeObjectURL(url);
   });
+});
   </script>
   
   <style>
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
   .teams_container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100vw;
-    height: 97.93vh;
-    background: 
-      radial-gradient(circle, transparent 20%, rgba(253, 254, 255, 0.7) 20%, rgba(245, 249, 252, 0.7) 80%, transparent 80%, transparent),
-      radial-gradient(circle, transparent 20%, rgba(231, 237, 241, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent) 15px 15px,
-      linear-gradient(rgba(147, 177, 197, 0.7) 1.2px, transparent 1.2px) 0 -0.6px,
-      linear-gradient(90deg, rgba(138, 181, 209, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
-    background-size: 30px 30px, 30px 30px, 15px 15px, 15px 15px;
-  }
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 20px;
+  padding-bottom: 0;
+  box-sizing: border-box;
+  background: 
+    radial-gradient(circle, transparent 20%, rgba(253, 254, 255, 0.7) 20%, rgba(245, 249, 252, 0.7) 80%, transparent 80%, transparent),
+    radial-gradient(circle, transparent 20%, rgba(231, 237, 241, 0.7) 20%, rgba(224, 238, 248, 0.7) 80%, transparent 80%, transparent) 15px 15px,
+    linear-gradient(rgba(147, 177, 197, 0.7) 1.2px, transparent 1.2px) 0 -0.6px,
+    linear-gradient(90deg, rgba(138, 181, 209, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
+  background-size: 30px 30px, 30px 30px, 15px 15px, 15px 15px;
+  background-attachment: local;
+}
+
+.content-wrapper {
+  display: flex;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 1400px;
+  gap: 20px;
+}
+
+.filters-container {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  align-self: flex-start;
+}
+
+.filters {
+  width: 200px;
+  padding: 15px;
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(141, 183, 202, 0.342);
+}
+
+.table-container {
+  flex: 1;
+}
 
   p {
     margin: 0px;
@@ -196,27 +349,29 @@
     margin: 20px;
     display: block;
     width: fit-content;
+    max-width: 100%;
+    box-sizing: border-box;
     background-color: rgba(65, 120, 156, 0.4);
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
     border: 1px solid rgba(141, 183, 202, 0.342);
   }
 
-  .teamTitle {
+  .teamTitle, .filters-title {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: rgb(22, 47, 65);
     font-size: 24px;
     font-weight: 600;
   }
 
-  .description-title {
+  .description-title, .members-title {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: rgb(22, 47, 65);
     font-size: 18px;
     font-weight: 600;
   }
 
-  .description {
+  .description, .filters-part {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: rgb(22, 47, 65);
     font-size: 16px;
@@ -225,12 +380,84 @@
 
   .block {
     display: inline-block;
-    width: auto;
+    flex: 1 1 60%;
+    min-width: 300px;
+    margin-right: 20px;
   }
 
   .team-data-container {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    flex-wrap: nowrap;
   }
+
+  .team-info {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: rgb(22, 47, 65);
+    font-size: 1rem;
+    flex: 1 1 30%;
+    min-width: 300px;
+  }
+
+  .member-name, .member-email {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: rgb(22, 47, 65);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .member-info {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+  }
+
+  .member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 10px;
+  background-color: #eee;
+  position: relative;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
+
+/* Фолбэк аватар (показывается только если основное изображение не загрузилось) */
+.member-avatar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../assets/avatar_alt.png');
+  background-size: cover;
+  z-index: 0;
+}
+
+.member-item {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 15px;
+}
+
+
   </style>
