@@ -3,12 +3,15 @@
     <div v-if="loading">Загрузка...</div>
     <div v-else-if="error">Ошибка при загрузке данных</div>
     <div v-else-if="!teams">Нет данных о командах</div>
-    <div v-else>
-      <q-input rounded outlined bg-color="grey-1" placeholder="Поиск" v-model="searchRequest" style="margin-top: 50px;">
+    <div v-else style="width: 90vw; display: flex; justify-content: flex-start; flex-direction: column; align-items: center;">
+      <q-input rounded outlined bg-color="grey-1" placeholder="Поиск" v-model="searchRequest" style="margin-top: 50px; width: 80%;">
       <template v-slot:append>
           <q-icon name="close" @click="searchRequest = ''" class="cursor-pointer" />
         </template>
         </q-input>
+        <div class="panel description" >
+        <p>Найденно команд: {{ filteredTeams.length }}</p>
+        </div>
       <div class="content-wrapper">
       <div class="filters-container">
         <div class="filters">
@@ -25,6 +28,17 @@
           <q-checkbox v-model="inSearch" label="В поисках" class="filters-part" />
           </div>
           <q-checkbox v-model="inWork" label="В работе" class="filters-part" />
+          <q-separator />
+          <div style="width: 90%; display: flex; justify-content: center; margin: 0; justify-self: center;">
+          <q-btn 
+            outline 
+            dense 
+            color="primary" 
+            label="Сбросить" 
+            @click="resetFilters" 
+            class="reset-btn"
+          />
+          </div>
         </div>
       </div>
       
@@ -32,14 +46,14 @@
         <q-table
           flat
           bordered
-          :rows="teams"
+          :rows="filteredTeams"
           :columns="columns"
           hide-pagination
           row-key="id"
           style="border-radius: 15px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
-    border: 1px solid rgba(141, 183, 202, 0.342);"
+    border: 1px solid rgba(141, 183, 202, 0.342); width: 100%;"
         >
         <template v-slot:header="props">
           <q-tr :props="props">
@@ -47,6 +61,7 @@
               v-for="col in props.cols"
               :key="col.name"
               :props="props"
+              style="padding: 0; padding-left: 10px;"
             >
               {{ col.label }}
             </q-th>
@@ -61,6 +76,7 @@
               v-for="col in props.cols"
               :key="col.name"
               :props="props"
+              style="padding: 0; padding-left: 10px;"
             >
               {{ col.value }}
             </q-td>
@@ -128,6 +144,15 @@
             </div>
           </div>
         </div>
+
+        <q-btn 
+        filled
+        color="primary"
+        label="Подать заявку"
+        @click="sendRequestToTeam(props.row.id)"
+
+        />
+
       </div>
                 
             </q-td>
@@ -142,9 +167,11 @@
 </template>
   
   <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { ref, onMounted, onUnmounted, computed } from 'vue';
   import { instance } from 'src/api/axios.api';
   import type { ITeam, IUser } from '../types/types';
+import { useUserStore } from 'src/store';
+import { toast } from 'vue3-toastify';
 
   const teams = ref<ITeam[] | null>(null);
   const loading = ref(true);
@@ -214,13 +241,18 @@ const fetchUserData = async (userId: number): Promise<void> => {
   }
 };
 
+const cutTextLength = (text: string) => {
+  const maxLength = 20
+  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
+}
+
   const columns = [
     {
       name: 'title',
       required: true,
       label: 'Название',
       align: 'left' as const, // Явное указание типа
-      field: (row: ITeam) => row.title,
+      field: (row: ITeam) => cutTextLength(row.title),
       sortable: true
     },
     
@@ -236,7 +268,7 @@ const fetchUserData = async (userId: number): Promise<void> => {
         label: 'Участники',
         align: 'center' as const,
         field: (row: ITeam) => row.members.length + 1,
-        sortable: true
+        sortable: true,
     },
     {
       name: 'status',
@@ -253,6 +285,52 @@ const fetchUserData = async (userId: number): Promise<void> => {
       sortable: true
     }
   ];
+
+  const filteredTeams = computed(() => {
+  if (!teams.value) return [];
+  
+  return teams.value.filter(team => {
+    // Фильтрация по поисковому запросу
+    const matchesSearch = searchRequest.value === '' || 
+      team.title.toLowerCase().includes(searchRequest.value.toLowerCase()) || 
+      team.description.toLowerCase().includes(searchRequest.value.toLowerCase());
+    
+    // Фильтрация по приватности
+    const matchesPrivacy = 
+      (!isOpen.value && !isClose.value) || // если ничего не выбрано - пропускаем все
+      (isOpen.value && team.status === 'open') || 
+      (isClose.value && team.status === 'close');
+    
+    // Фильтрация по статусу
+    const matchesStatus = 
+      (!inSearch.value && !inWork.value) || // если ничего не выбрано - пропускаем все
+      (inSearch.value && !team.currentProjectId) || 
+      (inWork.value && team.currentProjectId);
+    
+    return matchesSearch && matchesPrivacy && matchesStatus;
+  });
+});
+
+const resetFilters = () => {
+  isOpen.value = false;
+  isClose.value = false;
+  inSearch.value = false;
+  inWork.value = false;
+  searchRequest.value = '';
+};
+
+const sendRequestToTeam = async (teamId: number) => {
+  const userId = useUserStore().getUser?.id
+  try {
+    await instance.post('/team-request', {userId: userId, teamId: teamId})
+    toast.success('Заявка подана')
+  }
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  catch(err: any) {
+      const error = err.response?.data.message
+      toast.error(error)
+    }
+}
   
   onMounted(async () => {
   try {
@@ -317,12 +395,16 @@ html, body {
   gap: 20px;
 }
 
+
+
 .filters-container {
   position: sticky;
   top: 80px;
   height: fit-content;
   align-self: flex-start;
 }
+
+
 
 .filters {
   width: 200px;
@@ -334,9 +416,28 @@ html, body {
   border: 1px solid rgba(141, 183, 202, 0.342);
 }
 
+@media (max-width: 700px) {
+  .content-wrapper{
+  flex-direction: column;
+  }
+
+  .filters-container {
+    position: static;
+    width: 100%;
+    margin-bottom: 20px;
+    order: -1;
+  }
+
+  .filters {
+    width: 100%;
+  }
+}
+
 .table-container {
   flex: 1;
+  min-width: 0;
 }
+
 
   p {
     margin: 0px;
@@ -378,10 +479,19 @@ html, body {
     font-weight: 500;
   }
 
+  .teamTitle, .description {
+    word-wrap: break-word;
+    word-break: break-word; /* Более агрессивный перенос для длинных слов */
+    overflow-wrap: break-word;
+    max-width: 100%;
+    white-space: normal;
+  }
+
   .block {
     display: inline-block;
-    flex: 1 1 60%;
+    flex: 1;
     min-width: 300px;
+    max-width: calc(60% - 20px);
     margin-right: 20px;
   }
 
@@ -389,7 +499,7 @@ html, body {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .team-info {
@@ -459,5 +569,13 @@ html, body {
   gap: 15px;
 }
 
+.reset-btn, .reset-btn .block  {
+  margin: 5px auto 5px auto !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  padding: 0 16px; /* или любые другие значения по вашему вкусу */
+  width: 100%;
+}
 
   </style>
