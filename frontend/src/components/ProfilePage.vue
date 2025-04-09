@@ -78,7 +78,7 @@
     </div>
 </template>
 
-<style>
+<style scoped>
 .profile-component {
     display: flex;
     justify-content: center;

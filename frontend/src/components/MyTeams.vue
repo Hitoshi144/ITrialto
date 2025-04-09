@@ -9,8 +9,8 @@
           vertical
           class="text-primary beautiful-bg"
         >
-          <q-tab name="iMember" icon="groups" label="Я - участник" />
-          <q-tab name="iTeamLeader" icon="person" label="Я - тим-лидер" />
+          <q-tab name="iMember" icon="groups" label="Я - участник" style="border-radius: 20px 0 0 0;" />
+          <q-tab name="iTeamLeader" icon="person" label="Я - тим-лидер" style="border-radius: 0 0 0 20px;" />
         </q-tabs>
   
         <q-tab-panels
@@ -40,7 +40,27 @@
                         <p class="team-description"><strong>Дата создания:</strong> {{ dateInterpretation(team.createdAt) }}</p>
                         <p class="team-description"><strong>Статус:</strong> {{ team.currentProjectId ? 'В работе' : 'В поисках' }}</p>
                         <p class="team-description"><strong>Приватность:</strong> {{ privacyInterpretation[team.status] }}</p>
-                        <p class="team-description"><strong>Количество участников:</strong> {{ team.members.length }}</p>
+                        <p class="team-description"><strong>Количество участников:</strong> {{ team.members.length + 1}}</p>
+                    </div>
+                </div>
+                <div class="memberList">
+                  <div class="team-title-panel members-panel">
+                    <img class="user-avatar" v-if="teamsByMemberIdLeaders[team.id]?.id && memberAvatars[teamsByMemberIdLeaders[team.id]?.id ?? '']" 
+                    :src="memberAvatars[teamsByMemberIdLeaders[team.id]?.id ?? ''] ?? ''" />
+                    <img v-else class="user-avatar" src="../assets/avatar_alt.png" />
+                    <div class="member-info">
+                      <q-badge color="accent" style="align-self: center; margin-bottom: 10px;" class="leader-badge">Тим-лидер</q-badge>
+                      <p class="team-description" style="text-align: center;">{{ teamsByMemberIdLeaders[team.id]?.firstname }} {{ teamsByMemberIdLeaders[team.id]?.lastname }}</p>
+                      <p class="team-description" style="text-align: center; font-size: 14px; text-decoration: underline;">{{ teamsByMemberIdLeaders[team.id]?.mail }}</p>
+                    </div>
+                  </div>
+                  <div class="team-title-panel members-panel" v-for="member in teamsByMemberIdMembers[team.id]" :key="member.id">
+                      <img class="user-avatar" v-if="memberAvatars[member.id]" :src="memberAvatars[member.id] ?? ''" />
+                      <img v-else class="user-avatar" src="../assets/avatar_alt.png" />
+                      <div class="member-info">
+                      <p class="team-description" style="text-align: center;">{{ member.firstname }} {{ member.lastname }}</p>
+                      <p class="team-description" style="text-align: center; font-size: 14px; text-decoration: underline;">{{ member.mail }}</p>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -56,7 +76,7 @@
     </div>
   </template>
   
-  <style>
+  <style scoped>
   .container {
     display: flex;
     flex-direction: column;
@@ -71,17 +91,19 @@
       linear-gradient(90deg, rgba(138, 181, 209, 0.7) 1.2px, rgba(224, 238, 248, 0.7) 1.2px) -0.6px 0;
     background-size: 30px 30px, 30px 30px, 15px 15px, 15px 15px;
     background-attachment: local;
+    overflow-x: hidden;
   }
   
   .tab-container {
     display: flex;
     width: 90vw;
     max-width: 1200px;
-    margin-top: 20px;
+    margin-top: 40px;
+    margin-bottom: 20px;
   }
 
   .title-panel {
-    margin-top: 20px;
+    margin-top: 40px;
     padding: 10px;
     border-radius: 15px;
     background-color: #E0EEF8;
@@ -150,6 +172,30 @@
     margin-left: 20px;
   }
 
+  .user-avatar {
+    width: auto;
+    height: 50px;
+    margin-right: 10px;
+    border-radius: 100%;
+  }
+
+  .members-panel {
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+  }
+
+  .member-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .memberList {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
   @media screen and (max-width: 700px) {
     .team-info {
         flex-direction: column;
@@ -162,9 +208,10 @@
   
   <script setup lang="ts">
   import { instance } from 'src/api/axios.api';
+import { AuthService } from 'src/services/auth.service';
 import { useUserStore } from 'src/store';
-import type { ITeam } from 'src/types/types';
-import { onMounted, ref } from 'vue';
+import type { ITeam, IUser } from 'src/types/types';
+import { onMounted, onUnmounted, ref } from 'vue';
   
   const tab = ref<string>('iMember');
 
@@ -172,6 +219,56 @@ import { onMounted, ref } from 'vue';
 
   const teamsByMemberId = ref<ITeam[]>([])
   const teamsByLeaderId = ref<ITeam[]>([])
+  const teamsByMemberIdMembers = ref<Record<string, IUser[]>>({});
+  const teamsByMemberIdLeaders = ref<Record<string, IUser>>({})
+
+  const memberAvatars = ref<Record<string, string>>({})
+
+  const loadAvatar = async (userId: number): Promise<void> => {
+  try {
+    // Пытаемся загрузить аватар для всех пользователей
+    const response = await AuthService.getAvatar(userId);
+    if (response && response.size > 0) {
+      const avatarUrl = URL.createObjectURL(response);
+      memberAvatars.value = { 
+        ...memberAvatars.value, 
+        [userId]: avatarUrl 
+      };
+    }
+  } catch (error) {
+    console.error(`Ошибка загрузки аватара пользователя ${userId}:`, error);
+    // В случае ошибки просто не добавляем аватар
+  }
+};
+
+  const loadTeamLeaderData = async (teamId: number, teamLeaderId: number) => {
+    try{
+      const response = await instance.get<IUser>(`user/${teamLeaderId}`);
+        teamsByMemberIdLeaders.value[teamId] = response.data;
+        
+        await loadAvatar(response.data.id);
+    }
+    catch (error) {
+      console.log('Ошибка загрузки данных лидеров:', error)
+    }
+  }
+
+  const loadMembersData = async (teamId: number, memberIds: string[]) => {
+  try {
+    const membersPromises = memberIds.map(id => 
+      instance.get<IUser>(`user/${id}`)
+    );
+    const membersResponses = await Promise.all(membersPromises);
+    teamsByMemberIdMembers.value[teamId] = membersResponses.map(r => r.data);
+
+    await Promise.all(
+      membersResponses.map(response => 
+        loadAvatar(response.data.id)
+    ));
+  } catch (error) {
+    console.error('Ошибка загрузки данных участников:', error);
+  }
+};
 
   const privacyInterpretation: Record<string, string> = {
   close: "Закрыта",
@@ -187,6 +284,22 @@ import { onMounted, ref } from 'vue';
   onMounted(async () => {
      teamsByMemberId.value = (await instance.get(`teams/member/${user?.id}`)).data
      teamsByLeaderId.value = (await instance.get('teams')).data
+
+     teamsByMemberId.value.forEach(team => {
+     loadMembersData(team.id, team.members).catch(error => console.error('Error loading members:', error));
+
+     teamsByMemberId.value.forEach(team => {
+      loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading members:', error));
+     })
+  });
   }
 )
+
+onUnmounted(() => {
+  Object.entries(memberAvatars.value).forEach(([url]) => {
+    if (url && typeof url === 'string') {
+      URL.revokeObjectURL(url);
+    }
+  });
+});
   </script>
