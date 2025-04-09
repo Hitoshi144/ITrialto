@@ -51,6 +51,17 @@ export class TeamsController {
     }
   }
 
+  @Get('member/:id')
+  @UseGuards(JwtAuthGuard)
+  async findByMemberId(@Param('id') id: number) {
+    try {
+      return await this.teamsService.findAllByMemberId(+id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   async update(@Param('id') id: string, @Body() updateTeamDto: UpdateTeamDto) {

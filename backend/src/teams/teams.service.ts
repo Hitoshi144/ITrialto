@@ -59,6 +59,13 @@ export class TeamsService {
     }})
   }
 
+  async findAllByMemberId(memberId: number) {
+    return await this.teamRepository.find({where: {
+      members: ArrayContains([memberId])
+    }
+    })
+  }
+
   async findAll() {
     return await this.teamRepository.find()
   }

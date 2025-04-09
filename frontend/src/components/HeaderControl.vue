@@ -41,7 +41,7 @@
           </q-item>
           <q-separator />
           <q-item clickable v-close-popup v-if="user?.role === 'teacher' || user?.role === 'student'">
-            <q-item-section class="no-select"
+            <q-item-section class="no-select" @click="router.push({name: 'my-teams'})"
             >Моя команда</q-item-section>
           </q-item>
           <q-item clickable v-close-popup>

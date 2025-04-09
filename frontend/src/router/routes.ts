@@ -37,6 +37,12 @@ const routes: RouteRecordRaw[] = [
       component: () => import('../components/TeamsRegistryPage.vue'),
       meta: {requiresAuth: true}
     },
+    {
+      path: 'my-teams',
+      name: 'my-teams',
+      component: () => import('../components/MyTeams.vue'),
+      meta: {requiresAuth: true}
+    },
   ],
   },
 
