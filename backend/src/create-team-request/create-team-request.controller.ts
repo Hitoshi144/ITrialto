@@ -47,4 +47,10 @@ export class CreateTeamRequestController {
       req.user.id
     );
   }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteRequest(@Param('id') id: number) {
+    return await this.createTeamRequestService.deleteRequest(+id)
+  }
 }

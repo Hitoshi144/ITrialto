@@ -81,7 +81,7 @@ export class CreateTeamRequestService {
 
   async getUserRequests(userId: number) {
     return await this.requestRepository.find({ 
-      where: { creatorId: userId },
+      where: { creatorId: userId, status: 'pending' },
       order: { createdAt: 'DESC' }
     });
   }
@@ -92,5 +92,9 @@ export class CreateTeamRequestService {
       relations: ['creator'],
       order: { createdAt: 'DESC' }
     });
+  }
+
+  async deleteRequest(id: number) {
+    return await this.requestRepository.delete(id)
   }
 }

@@ -31,8 +31,12 @@ export class TeamRequestService {
     const existingRequest = await this.teamRequestRepository.findOne({
       where: { userId, teamId },
     });
-    if (existingRequest) {
+    if (existingRequest && existingRequest.status === 'pending') {
       throw new BadRequestException('Request already exists');
+    }
+
+    if (userId in team.members) {
+      throw new BadRequestException('Вы уже являетесь участником данной команды')
     }
 
     const teamRequest = this.teamRequestRepository.create({
@@ -46,7 +50,7 @@ export class TeamRequestService {
 
   async getRequestsForLeader(teamLeaderId: number) {
     return await this.teamRequestRepository.find({
-      where: { team: { teamLeaderId } },
+      where: { team: { teamLeaderId }, status: 'pending' },
       relations: ['user', 'team'],
     });
   }

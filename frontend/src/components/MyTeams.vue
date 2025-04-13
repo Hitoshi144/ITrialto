@@ -10,8 +10,9 @@
           class="text-primary beautiful-bg"
           style="position:sticky; align-self: flex-start; top: 60px; height: fit-content;"
         >
-          <q-tab name="iMember" icon="groups" label="Я - участник" style="border-radius: 20px 0 0 0;" />
-          <q-tab name="iTeamLeader" icon="person" label="Я - тим-лидер" style="border-radius: 0 0 0 20px;" />
+          <q-tab name="iMember" icon="groups" label="Я - участник" style="border-radius: 20px 0 0 0; border: 1px solid rgba(65, 120, 156, 0.5);" />
+          <q-tab name="iTeamLeader" icon="person" label="Я - тим-лидер" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
+          <q-tab name="createTeamRequests" icon="more_time" label="Заявки" style="border-radius: 0 0 0 20px; border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
         </q-tabs>
   
         <q-tab-panels
@@ -97,8 +98,46 @@
 
             <div v-for="team in teamsByLeaderId" :key="team.id">
                 <q-separator />
-                <div>
+                <div class="teams-header" style="align-items: center;">
                 <p class="team-title">{{ team.title }}</p>
+                <q-btn outline color="primary" :label="requestsToTeam.filter(req => req.teamId === team.id).length + ' ' + requestWordInterpretation(requestsToTeam.filter(req => req.teamId === team.id).length) + ' в команду'" style="height: 20px; border-radius: 10px;" @click="showRequestToTeam = true"  :disable="requestsToTeam.filter(req => req.teamId === team.id).length != 0 ? false : true" />
+
+                  <q-dialog v-model="showRequestToTeam" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+                    <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+                      <q-card-section>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                        <p class="text-h5" style="color: #41789C;">Заявки на вступление в команду <strong>{{ team.title }}</strong></p>
+                        <q-btn flat color="primary" rounded icon="close"  style="max-height: 48px;" v-close-popup />
+                        </div>
+                      </q-card-section>
+
+                      <q-card-section v-for="request in requestsToTeam.filter(req => req.teamId === team.id)" :key="request.id">
+                        <q-separator />
+                        <div style="display: flex; justify-content: space-around; align-items: center; flex-direction: row; margin-top: 15px;">
+                          <img class="user-avatar" style="margin-left: 40px; height: 80px; border: 2px solid #41789C;" v-if="memberAvatars[request.userId]" :src="memberAvatars[request.userId] ?? ''" />
+                          <img v-else class="user-avatar" style="margin-left: 40px; height: 80px; border: 2px solid #41789C;" src="../assets/avatar_alt.png" />
+                          <div style="display: flex; flex-direction: column;  width: 100%; align-items: center;">
+                          <div class="team-title-panel" style="flex-direction: column; align-items: center;">
+                            <p class="team-description">{{ request.user.firstname }} {{ request.user.lastname }}</p>
+                            <p class="team-description" style="text-decoration: underline;">{{ request.user.mail }}</p>
+                          </div>
+                          <div class="team-title-panel">
+                            <p class="team-description"><strong>Группа:</strong> {{ request.user.group }}</p>
+                          </div>
+                          <div class="team-title-panel" v-if="request.user.aboutMe">
+                            <p class="team-description">{{ request.user.aboutMe }}</p>
+                          </div>
+                          </div>
+                        </div>
+                        <div style="display: flex; flex-direction: row; justify-content: space-around; margin-top: 20px;">
+                          <q-btn filled color="primary" label="Принять" icon="check_circle" @click="approveRequestToTeam(request.id, team.id, request.userId)" style="border-radius: 10px;" />
+                          <q-btn outline color="primary" label="Отклонить" icon="cancel" @click="rejectRequestToTeam(request.id, team.id)" style="border-radius: 10px;" />
+                        </div>
+                      </q-card-section>
+
+                    </q-card>
+                  </q-dialog>
+
                 </div>
                 <div class="team-info">
                     <div class="team-title-panel" style="flex-direction: column; width: 100%;">
@@ -131,6 +170,28 @@
                       <div class="member-info">
                       <p class="team-description" style="text-align: center;">{{ member.firstname }} {{ member.lastname }}</p>
                       <p class="team-description" style="text-align: center; font-size: 14px; text-decoration: underline;">{{ member.mail }}</p>
+                      <q-btn filled color="primary" label="исключить" size="10px" style="border-radius: 10px; margin-top: 5px;" @click="memberIsDeleting = true" />
+
+                      <q-dialog v-model="memberIsDeleting" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+                        <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+                          <q-card-section>
+                            <div style="display: flex; justify-content: space-between; flex-direction: row;">
+                              <p class="text-h5" style="color: #41789C;">Исключение участника</p>
+                              <q-btn flat color="primary" rounded icon="close" v-close-popup />
+                            </div>
+                          </q-card-section>
+                          <q-card-section>
+                            <p class="text-h6" style="color: #41789C; margin-left: 30px;">Вы уверены, что хотите <span style="color: #eb6449;">исключить</span> участника {{ member.firstname }} {{ member.lastname }} из команды "{{ team.title }}"?</p>
+                          </q-card-section>
+                          <q-card-section>
+                            <div style="display: flex; justify-content: space-between; flex-direction: row;">
+                              <q-btn outline color="negative" style="border-radius: 10px; margin-left: 20px;" label="Да, исключить" @click="deleteMemberFromTeam(team.id.toString(), member.id.toString())" />
+                              <q-btn filled color="primary" style="border-radius: 10px; margin-right: 20px;" label="Нет, не исключать" @click="memberIsDeleting = false" />
+                            </div>
+                          </q-card-section>
+                        </q-card>
+                      </q-dialog>
+
                     </div>
                     </div>
                 </div>
@@ -182,6 +243,37 @@
                   </q-dialog>
 
                 </div>
+            </div>
+          </q-tab-panel>
+
+          <q-tab-panel name="createTeamRequests">
+            <p class="i-member-teams-title">Заявок на рассмотрении: {{ createTeamRequests.length }}</p>
+            <div v-for="request in createTeamRequests" :key="request.id">
+              <q-separator />
+              <p class="team-description" style="margin-top: 20px;"><strong>Название:</strong> {{ request.title }}</p>
+              <p class="team-description" style="margin-top: 15px;"><strong>Описание:</strong> {{ request.description }}</p>
+              <q-btn outline label="удалить заявку" style="border-radius: 10px; margin-top: 15px; display: flex; justify-self: flex-end;" color="primary" icon="delete_forever" @click="createTeamReqDeleting = true" />
+
+              <q-dialog v-model="createTeamReqDeleting" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+                <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+                  <q-card-section>
+                    <div style="display: flex; justify-content: space-between; flex-direction: row;">
+                          <p class="text-h5" style="color: #41789C;">Удаление заявки</p>
+                          <q-btn flat color="primary" rounded icon="close" v-close-popup />
+                        </div>
+                  </q-card-section>
+                  <q-card-section>
+                    <p class="text-h6" style="color: #41789C; margin-left: 30px;">Вы уверены, что хотите удалить заявку на создание команды?</p>
+                  </q-card-section>
+                  <q-card-section>
+                    <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                          <q-btn outline color="negative" style="border-radius: 10px; margin-left: 20px;" label="Да, удалить" @click="deleteCreateTeamReq(request.id)" />
+                          <q-btn filled color="primary" style="border-radius: 10px; margin-right: 20px;" label="Нет, не удалять" @click="createTeamReqDeleting = false" />
+                        </div>
+                  </q-card-section>
+                </q-card>
+              </q-dialog>
+            
             </div>
           </q-tab-panel>
   
@@ -347,7 +439,7 @@
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
 import { useUserStore } from 'src/store';
-import type { ITeam, IUser } from 'src/types/types';
+import type { ICreateTeamRequest, ITeam, ITeamRequests, IUser } from 'src/types/types';
 import { onMounted, onUnmounted, ref } from 'vue';
 import { toast } from 'vue3-toastify';
 
@@ -358,9 +450,12 @@ import { toast } from 'vue3-toastify';
 
   const teamsByMemberId = ref<ITeam[]>([])
   const teamsByLeaderId = ref<ITeam[]>([])
-  const teamsByMemberIdMembers = ref<Record<string, IUser[]>>({});
+  const teamsByMemberIdMembers = ref<Record<string, IUser[]>>({})
   const teamsByMemberIdLeaders = ref<Record<string, IUser>>({})
   const teamsByLeaderIdMembers = ref<Record<string, IUser[]>>({})
+  const createTeamRequests = ref<ICreateTeamRequest[]>([])
+
+  const requestsToTeam = ref<ITeamRequests[]>([])
 
   const memberAvatars = ref<Record<string, string>>({})
 
@@ -371,6 +466,9 @@ import { toast } from 'vue3-toastify';
 
   const teamIsCreating = ref<boolean>(false)
   const teamIsDeleting = ref<boolean>(false)
+  const memberIsDeleting = ref<boolean>(false)
+  const showRequestToTeam = ref<boolean>(false)
+  const createTeamReqDeleting = ref<boolean>(false)
 
   const loadAvatar = async (userId: number): Promise<void> => {
   try {
@@ -391,7 +489,7 @@ import { toast } from 'vue3-toastify';
     try{
       const response = await instance.get<IUser>(`user/${teamLeaderId}`);
         teamsByMemberIdLeaders.value[teamId] = response.data;
-        
+
         await loadAvatar(response.data.id);
     }
     catch (error) {
@@ -399,6 +497,17 @@ import { toast } from 'vue3-toastify';
     }
   }
 
+  const loadMemberData = async (teamId: number, memberId: number) => {
+    try {
+    await loadAvatar(memberId)
+
+    teamsByLeaderIdMembers.value[teamId]?.push((await instance.get<IUser>(`user/${memberId}`)).data)
+    }
+    catch (error: any) {
+      console.log(error.message)
+    }
+  }
+  
   const loadMembersData = async (teamId: number, memberIds: string[]) => {
   try {
     const membersPromises = memberIds.map(id => 
@@ -506,11 +615,83 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
     }
   }
 
+  const deleteMemberFromTeam = async (teamId: string, memberId: string) => {
+    try {
+      await instance.delete(`teams/${teamId}/members/${memberId}`)
+      memberIsDeleting.value = false
+      teamsByLeaderIdMembers.value[teamId] = teamsByLeaderIdMembers.value[teamId]!.filter(req => req.id != Number(memberId))
+      toast.success('участник исключен')
+    }
+    catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
   const dateInterpretation = (date: string) => {
   const tempCreatedAt = new Date(date);
   const pad = (num: number) => num.toString().padStart(2, '0');
   return `${pad(tempCreatedAt.getDate())}.${pad(tempCreatedAt.getMonth() + 1)}.${tempCreatedAt.getFullYear()}`;
 };
+
+const requestWordInterpretation = (requestsCount: number) =>{
+  if (requestsCount === 1) {
+    return 'заявка'
+  }
+  else if (requestsCount > 1 && requestsCount < 5) {
+    return 'заявки'
+  }
+  else {
+    return 'заявок'
+  }
+}
+
+const rejectRequestToTeam = async (requestId: number, teamId: number) => {
+  try{
+    await instance.patch(`team-request/${requestId}`, {status: 'rejected'})
+
+    requestsToTeam.value = requestsToTeam.value.filter(req => req.id != requestId)
+
+    if (requestsToTeam.value.filter(req => req.teamId === teamId).length === 0) {
+      showRequestToTeam.value = false
+    }
+
+    toast.success('Заявка отклонена')
+  }
+  catch (error: any) {
+    toast.error(error.message)
+  }
+}
+
+const approveRequestToTeam = async (requestId: number, teamId: number, memberId: number) => {
+  try {
+    await instance.patch(`team-request/${requestId}`, {status: 'approved'})
+
+    requestsToTeam.value = requestsToTeam.value.filter(req => req.id != requestId)
+
+    await loadMemberData(teamId, memberId)
+
+    if (requestsToTeam.value.filter(req => req.teamId === teamId).length === 0) {
+      showRequestToTeam.value = false
+    }
+
+    toast.success('Заявка одобрена')
+  }
+  catch (error: any) {
+    toast.error(error.message)
+  }
+}
+
+ const deleteCreateTeamReq = async (requestId: number) => {
+  try {
+    await instance.delete(`create-team-request/${requestId}`)
+
+    createTeamRequests.value = createTeamRequests.value.filter(req => req.id != requestId)
+    toast.success('Заявка удалена')
+  }
+  catch (error: any) {
+    console.log(error.message)
+  }
+ }
 
 const clearTeamVariables = () => {
   teamTitle.value = ''
@@ -520,15 +701,21 @@ const clearTeamVariables = () => {
   onMounted(async () => {
      teamsByMemberId.value = (await instance.get(`teams/member/${user?.id}`)).data
      teamsByLeaderId.value = (await instance.get('teams')).data
+     requestsToTeam.value = (await instance.get('team-request/leader')).data
+     createTeamRequests.value = (await instance.get('create-team-request/my')).data
 
      teamsByMemberId.value.forEach(team => {
      loadMembersData(team.id, team.members).catch(error => console.error('Error loading members:', error));
 
+     teamsByMemberId.value.forEach(team => {
+      loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading leaders:', error));
+     })
+
      teamsByLeaderId.value.forEach(team => {
       loadMembersDataByLeaderId(team.id, team.members).catch(error => console.error('Error loading members:', error));
 
-     teamsByMemberId.value.forEach(team => {
-      loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading members:', error));
+     requestsToTeam.value.forEach(request => {
+      loadAvatar(request.userId).catch(error => console.error('Error loading request avatars:', error));
      })
   });
   })}

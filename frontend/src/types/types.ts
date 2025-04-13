@@ -68,3 +68,22 @@ export interface ITeam {
     createdAt: string
     currentProjectId: number
 }
+
+export interface ITeamRequests {
+    id: number
+    user: IUser
+    userId: number
+    team: ITeam
+    teamId: number
+    status: string
+    createdAt: string
+}
+
+export interface ICreateTeamRequest {
+    id: number
+    title: string
+    description: string
+    creatorId: number
+    status: string
+    createdAt: string
+}

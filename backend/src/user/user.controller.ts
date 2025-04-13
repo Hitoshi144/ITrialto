@@ -60,7 +60,7 @@ async uploadAvatar(@UploadedFile() file: Express.Multer.File) {
     const avatarPath = join(process.cwd(), 'uploads', 'avatars', `${userId}.jpg`);
     
     if (!existsSync(avatarPath)) {
-      throw new NotFoundException('Avatar not found');
+      return null;
     }
   
     return new StreamableFile(createReadStream(avatarPath), {
