@@ -37,6 +37,7 @@
             label="Сбросить" 
             @click="resetFilters" 
             class="reset-btn"
+            style="border-radius: 10px;"
           />
           </div>
         </div>
@@ -48,12 +49,15 @@
           bordered
           :rows="filteredTeams"
           :columns="columns"
+          :pagination="pagination"
           hide-pagination
+          virtual-scroll
+          :virtual-scroll-item-size="48"
           row-key="id"
           style="border-radius: 15px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
-    border: 1px solid rgba(141, 183, 202, 0.342); width: 100%;"
+    border: 1px solid rgba(141, 183, 202, 0.342); width: 100%; height: auto; max-height: none;"
         >
         <template v-slot:header="props">
           <q-tr :props="props">
@@ -91,7 +95,7 @@
       />
             </q-td>
           </q-tr>
-          <q-tr v-show="props.expand" :props="props">
+          <q-tr v-show="props.expand" :props="props" class="expand-content">
             <q-td colspan="100%">
               <div class="text-left q-pa-md">
                 <div class="team-data-container">
@@ -150,7 +154,7 @@
         color="primary"
         label="Подать заявку"
         @click="sendRequestToTeam(props.row.id)"
-
+        style="border-radius: 10px; margin-left: 20px;"
         />
 
       </div>
@@ -245,6 +249,10 @@ const cutTextLength = (text: string) => {
   const maxLength = 20
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text
 }
+
+const pagination = ref({
+  rowsPerPage: 0 // 0 означает "показать все строки"
+});
 
   const columns = [
     {
@@ -419,6 +427,7 @@ html, body {
 @media (max-width: 700px) {
   .content-wrapper{
   flex-direction: column;
+  min-height: fit-content;
   }
 
   .filters-container {
@@ -434,8 +443,10 @@ html, body {
 }
 
 .table-container {
+  height: auto !important;
   flex: 1;
   min-width: 0;
+  overflow: visible !important;
 }
 
 
@@ -469,7 +480,7 @@ html, body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: rgb(22, 47, 65);
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .description, .filters-part {
@@ -576,6 +587,40 @@ html, body {
   display: flex !important;
   padding: 0 16px; /* или любые другие значения по вашему вкусу */
   width: 100%;
+}
+
+.expandable-row {
+  transition: all 0.3s ease;
+}
+
+.expand-content {
+  animation: fadeIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px; /* Примерное значение, подберите под ваш контент */
+    transform: translateY(0);
+  }
+}
+
+/* Для плавного сворачивания */
+.q-table__expandable-row {
+  transition: all 0.3s ease;
+}
+
+.q-table__expandable-row--closed {
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  border: none;
 }
 
   </style>

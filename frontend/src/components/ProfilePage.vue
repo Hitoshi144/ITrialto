@@ -308,7 +308,7 @@ onMounted(async () => {
 const loadAvatar = async (userId: number) => {
   try {
     const response = await AuthService.getAvatar(userId);
-    if (response) {
+    if (response && response.size > 0) {
       avatarUrl.value = URL.createObjectURL(response);
     }
   } catch (error) {

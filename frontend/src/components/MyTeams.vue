@@ -214,7 +214,7 @@
                       </q-card-section>
                       <q-card-section>
                         <div style="display: flex; justify-content: center;">
-                        <q-btn filled label="сохранить изменения" color="primary" @click="saveTeamChanges(team.id)" />
+                        <q-btn filled label="сохранить изменения" color="primary" @click="saveTeamChanges(team.id)" style="border-radius: 10px;" />
                         </div>
                       </q-card-section>
                     </q-card>
@@ -608,7 +608,7 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
   const deleteTeam = async (teamId: string) => {
     try {
       await instance.delete(`teams/${teamId}`)
-      window.location.reload()
+      teamsByMemberId.value = teamsByLeaderId.value.filter(req => req.id != Number(teamId))
     }
     catch (error: any) {
       toast.error(error.message)

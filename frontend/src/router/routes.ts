@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
       component: () => import('../components/MyTeams.vue'),
       meta: {requiresAuth: true}
     },
+    {
+      path: 'requests-moderation',
+      name: 'requests-moderation',
+      component: () => import('../components/RequestsModerationPage.vue'),
+      meta: {requiresAuth: true}
+    },
   ],
   },
 

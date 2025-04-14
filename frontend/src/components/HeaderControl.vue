@@ -24,11 +24,11 @@
       </nav>
       <q-btn flat class="bg-accent" rounded>
       <div class="profile_logo">
-        <img 
-        :src="avatarUrl || avatarAlt" 
-        alt="Аватар" 
+        <img v-if="avatarUrl != null"
+        :src="avatarUrl"
         class="user-avatar"
       />
+      <img v-else :src="avatarAlt" class="user-avatar" />
         <div class="name_rule">
         <p class="name">{{ user?.firstname }} {{ user?.lastname }}</p>
         <q-badge rounded color="primary" style="font-size: smaller; font-weight: 600; opacity: 75%; justify-content: center; padding-top: 5px;">{{ rolesInterpritation[user?.role as keyof typeof rolesInterpritation || 'withoutRole'] }}</q-badge>
@@ -46,6 +46,9 @@
           </q-item>
           <q-item clickable v-close-popup>
             <q-item-section class="no-select">Мои проекты</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup v-if="user?.role === 'teacher'">
+            <q-item-section class="no-select" @click="router.push({name: 'requests-moderation'})">Модерация заявок</q-item-section>
           </q-item>
           <q-separator />
           <q-item clickable v-close-popup @click="logoutHandler" class="logout">
@@ -336,7 +339,7 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
   if (user.value?.id) {
     try {
       const response = await AuthService.getAvatar(user.value.id);
-      if (response) {
+      if (response && response.size > 0) {
         avatarUrl.value = URL.createObjectURL(response);
       }
     } catch (error) {
