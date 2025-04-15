@@ -38,7 +38,7 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Пользователь не найден')
     }
-    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, phone: user.phone, role: user.role, group: user.group, createAt: user.createAt, aboutMe: user.aboutMe};
+    return {id: user.id, mail: user.mail, firstname: user.firstname, lastname: user.lastname, phone: user.phone, role: user.role, group: user.group, createAt: user.createAt, aboutMe: user.aboutMe, competencies: user.competencies};
   }
 
   @Patch('profile')

@@ -24,6 +24,7 @@ export interface IResponse {
     createAt: string
     updateAt: string
     token: string
+    competencies: string[]
 }
 
 export interface IUser {
@@ -35,7 +36,7 @@ export interface IUser {
     phone: string
     role: string
     aboutMe: string
-    hasAvatar?: boolean
+    competencies: string[]
 }
 
 export interface IUserProfile {
@@ -48,6 +49,7 @@ export interface IUserProfile {
     group: string
     createAt: string
     aboutMe: string
+    competencies: string[]
 }
 
 export interface IUserUpdate {

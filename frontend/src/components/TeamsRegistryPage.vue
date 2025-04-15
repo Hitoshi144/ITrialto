@@ -149,13 +149,15 @@
           </div>
         </div>
 
-        <q-btn 
+        <q-btn v-if="!(props.row.members.includes(user!.id)) && user?.id != props.row.teamLeaderId && !isPendingRequest(props.row.id, props.row.teamLeaderId) && props.row.status === 'open'"
         filled
         color="primary"
         label="Подать заявку"
         @click="sendRequestToTeam(props.row.id)"
         style="border-radius: 10px; margin-left: 20px;"
         />
+        <q-btn outline disable color="primary" v-else-if="isPendingRequest(props.row.id, props.row.teamLeaderId)" :label="user!.id === props.row.teamLeaderId ? 'Вы тим-лидер' : 'Заявка подана'" style="border-radius: 10px; margin-left: 20px;" />
+        <q-btn outline disable color="primary" v-else-if="props.row.members.includes(user!.id)" label="Вы участник" style="border-radius: 10px; margin-left: 20px;" />
 
       </div>
                 
@@ -173,13 +175,17 @@
   <script setup lang="ts">
   import { ref, onMounted, onUnmounted, computed } from 'vue';
   import { instance } from 'src/api/axios.api';
-  import type { ITeam, IUser } from '../types/types';
+  import type { ITeam, ITeamRequests, IUser } from '../types/types';
 import { useUserStore } from 'src/store';
 import { toast } from 'vue3-toastify';
 
   const teams = ref<ITeam[] | null>(null);
   const loading = ref(true);
   const error = ref(false);
+
+  const user = useUserStore().getUser
+
+  const myPendingRequests = ref<ITeamRequests[]>([])
 
   const statusInterpretation: Record<string, string> = {
     close: "Закрыта",
@@ -244,6 +250,10 @@ const fetchUserData = async (userId: number): Promise<void> => {
     }
   }
 };
+
+const isPendingRequest = (teamId: number, teamLeaderId: number) => {
+  return myPendingRequests.value.some(req => req.teamId === teamId) || teamLeaderId === user!.id
+}
 
 const cutTextLength = (text: string) => {
   const maxLength = 20
@@ -331,6 +341,9 @@ const sendRequestToTeam = async (teamId: number) => {
   const userId = useUserStore().getUser?.id
   try {
     await instance.post('/team-request', {userId: userId, teamId: teamId})
+
+    myPendingRequests.value = (await instance.get<ITeamRequests[]>(`team-request/${user?.id}`)).data
+
     toast.success('Заявка подана')
   }
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -344,6 +357,8 @@ const sendRequestToTeam = async (teamId: number) => {
   try {
     const response = await instance.get<ITeam[]>('/teams/all');
     teams.value = response.data;
+
+    myPendingRequests.value = (await instance.get<ITeamRequests[]>(`team-request/${user?.id}`)).data
 
     const allUserIds = new Set<number>();
     teams.value.forEach(team => {

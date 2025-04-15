@@ -597,8 +597,10 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
   const sendTeamCreatingRequest = async () => {
     try {
       await instance.post('create-team-request', {title: teamTitle.value, description: teamDescription.value})
+      createTeamRequests.value = (await instance.get('create-team-request/my')).data
       toast.success('Заявка отправлена')
       teamIsCreating.value = false
+      createTeamReqDeleting.value = false
     }
     catch (error: any) {
       toast.error(error.message)
@@ -704,22 +706,28 @@ const clearTeamVariables = () => {
      requestsToTeam.value = (await instance.get('team-request/leader')).data
      createTeamRequests.value = (await instance.get('create-team-request/my')).data
 
+    
+     
      teamsByMemberId.value.forEach(team => {
-     loadMembersData(team.id, team.members).catch(error => console.error('Error loading members:', error));
+     loadMembersData(team.id, team.members).catch(error => console.error('Error loading members:', error))});
+
 
      teamsByMemberId.value.forEach(team => {
       loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading leaders:', error));
      })
 
-     teamsByLeaderId.value.forEach(team => {
-      loadMembersDataByLeaderId(team.id, team.members).catch(error => console.error('Error loading members:', error));
 
      requestsToTeam.value.forEach(request => {
       loadAvatar(request.userId).catch(error => console.error('Error loading request avatars:', error));
      })
-  });
-  })}
-)
+
+
+     teamsByLeaderId.value.forEach(team => {
+      loadMembersDataByLeaderId(team.id, team.members).catch(error => console.error('Error loading members:', error));
+
+     }
+     
+  )});
 
 onUnmounted(() => {
   Object.entries(memberAvatars.value).forEach(([url]) => {

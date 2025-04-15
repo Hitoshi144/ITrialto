@@ -36,12 +36,52 @@
                     <q-input standout="bg-primary text-white" v-model="lastname" label="Фамилия" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
                     <q-input standout="bg-primary text-white" v-model="group" label="Группа" type="text" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" v-if="role === 'student'" />
                     <q-input standout="bg-primary text-white" v-model="phone" label="Телефон" type="tel" style="margin-top: 20px; margin-bottom: 20px;" :readonly="!isEditing" />
-                    <p style="padding-left: 5px;">Дата регистрации: {{ createAt }}</p>
+                    <p style="padding-left: 5px;  opacity: 0.7;">Дата регистрации: {{ createAt }}</p>
                 </div>
             </div>
             <div class="card-bottom">
                 <q-input outlined v-model="aboutMe" type="textarea" label="Обо мне" autogrow :readonly="!isEditing" />
             </div>
+
+            <div class="stack-container" v-if="role === 'student'">
+              <p class="stack-title">Стек технологий</p>
+              <p class="post-text">*нажмите "изменить", чтобы увидеть больше</p>
+              <div class="technologies">
+                <div class="stack-list">
+                <p class="stack-category">ЯП</p>
+                <div v-for="lang in languages" :key="lang">
+                  <transition mode="out-in" name="fade-edit">
+                  <q-checkbox v-if="isEditing || selectedStack[lang] === true" v-model="selectedStack[lang]" :label="lang" :disable="isEditing ? false : true" />
+                  </transition>
+                </div>
+                </div>
+                <div class="stack-list">
+                <p class="stack-category">Фреймворки</p>
+                <div v-for="framework in frameworks" :key="framework">
+                  <transition mode="out-in" name="fade-edit">
+                  <q-checkbox v-if="isEditing || selectedStack[framework] === true" v-model="selectedStack[framework]" :label="framework" :disable="isEditing ? false : true" />
+                  </transition>
+                </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">Базы данных</p>
+                  <div v-for="database in databases" :key="database">
+                    <transition mode="out-in" name="fade-edit">
+                    <q-checkbox v-if="isEditing || selectedStack[database] === true" v-model="selectedStack[database]" :label="database" :disable="isEditing ? false : true" />
+                    </transition>
+                  </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">DevOps</p>
+                  <div v-for="devop in devops" :key="devop">
+                    <transition mode="out-in" name="fade-edit">
+                    <q-checkbox v-if="isEditing || selectedStack[devop] === true" v-model="selectedStack[devop]" :label="devop" :disable="isEditing ? false : true" />
+                    </transition>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="actions">
     <!-- Контейнер для кнопки "Изменить" -->
     <transition name="fade-edit" mode="out-in">
@@ -164,6 +204,39 @@ h3 {
   transform: translateX(-50%);
 }
 
+.post-text {
+  margin: 0;
+  opacity: 50%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+}
+
+.stack-title {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #41789C;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.stack-container {
+  margin-top: 20px;
+  margin-left: 5px;
+}
+
+.technologies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stack-category {
+  text-align: center;
+  color: #41789C;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+}
+
 /* Контейнер для кнопок "Сохранить" и "Отмена" */
 .save-cancel-buttons-container {
   position: absolute;
@@ -215,6 +288,12 @@ h3 {
   transition-delay: 0.3s; /* Задержка для появления */
 }
 
+.stack-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
 @media (max-width: 769px) {
     .card-top {
         flex-direction: column;
@@ -254,6 +333,8 @@ import type { IUserProfile } from 'src/types/types';
 import { onMounted, ref } from 'vue';
 import { useUserStore } from 'src/store';
 import avatarAlt from '../assets/avatar_alt.png';
+import { languages, devops, databases, frameworks } from '../types/technologies'
+import { toast } from 'vue3-toastify';
 
 const profile = ref<IUserProfile | null>(null);
 
@@ -271,6 +352,8 @@ const aboutMe = ref<string>('');
 const createAt = ref<string>('');
 const role = ref<string>('');
 const isEditing = ref<boolean>(false);
+
+const selectedStack = ref<Record<string, boolean>>({})
 
 const rolesInterpritation = {
     parther: 'Партнер',
@@ -296,6 +379,18 @@ onMounted(async () => {
         createdDate.value = data.createAt;
         aboutMe.value = data.aboutMe || '';
         role.value = data.role;
+        console.log(data.competencies)
+
+        languages.forEach(lang => selectedStack.value[lang] = false);
+        frameworks.forEach(framework => selectedStack.value[framework] = false);
+        databases.forEach(database => selectedStack.value[database] = false);
+        devops.forEach(devop => selectedStack.value[devop] = false);
+
+        if (data.competencies) {
+            data.competencies.forEach(comp => {
+                selectedStack.value[comp] = true;
+            });
+        }
 
         const createdAtDate = new Date(createdDate.value);
         const pad = (num: number) => num.toString().padStart(2, '0');
@@ -331,7 +426,6 @@ const handleFileUpload = async (event: Event) => {
       }
       
       // Обновляем хранилище (теперь метод существует)
-      userStore.updateUser({ hasAvatar: true });
       window.location.reload()
     } catch (error) {
       console.error('Ошибка загрузки аватара:', error);
@@ -353,7 +447,8 @@ const saveChanges = async () => {
             lastname: lastname.value,
             group: group.value,
             phone: phone.value,
-            aboutMe: aboutMe.value
+            aboutMe: aboutMe.value,
+            competencies: Object.keys(selectedStack.value).filter(el => selectedStack.value[el])
         };
 
         // Отправляем обновленные данные на сервер
@@ -368,10 +463,12 @@ const saveChanges = async () => {
         lastname: response.lastname,
         group: response.group,
         phone: response.phone,
-        aboutMe: response.aboutMe
+        aboutMe: response.aboutMe,
+        competencies: response.competencies
       });
 
-            isEditing.value = false; // Выходим из режима редактирования
+      toast.success('Изменения сохранены')      
+      isEditing.value = false; // Выходим из режима редактирования
         }
     }
 };

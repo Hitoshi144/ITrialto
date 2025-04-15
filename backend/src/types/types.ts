@@ -8,6 +8,7 @@ export interface IUser {
     group: string
     phone: string
     role: string
+    competencies: string[]
     createAt: Date
     updateAt: Date
 }
@@ -18,6 +19,7 @@ export interface IUpdateUser {
     group: string
     phone: string
     aboutMe: string
+    competencies: string[]
 }
 
 export interface RequestWithUser extends Request {

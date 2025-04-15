@@ -58,6 +58,6 @@ export class User {
     @OneToMany(() => Project, (project) => project.user)
     projects: Project[];
 
-    @Column({ default: false })
-    hasAvatar: boolean;
+    @Column('text', {array: true, nullable: true})
+    competencies: string[];
 }

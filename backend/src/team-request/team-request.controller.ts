@@ -21,6 +21,12 @@ export class TeamRequestController {
     return await this.teamRequestService.getRequestsForLeader(teamLeaderId);
   }
 
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getMyPendingRequests(@Param('id') id: number) {
+    return await this.teamRequestService.findMyPendingRequests(+id)
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe())
