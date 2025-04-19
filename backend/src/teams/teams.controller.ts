@@ -62,6 +62,17 @@ export class TeamsController {
     }
   }
 
+  @Get('stack/:id')
+  @UseGuards(JwtAuthGuard)
+  async getTeamStack(@Param('id') teamId: number) {
+    try {
+      return await this.teamsService.getTeamStack(teamId)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   async update(@Param('id') id: string, @Body() updateTeamDto: UpdateTeamDto) {

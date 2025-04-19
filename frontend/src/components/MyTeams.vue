@@ -45,6 +45,19 @@
                         <p class="team-description"><strong>Количество участников:</strong> {{ team.members.length + 1}}</p>
                     </div>
                 </div>
+
+                <div class="team-title-panel" style="max-width: 100%;">
+                  <div v-if="teamStacks[team.id]!.length > 0" class="stack-panel">
+                    <p class="team-description" style="align-self: center;"><strong>Стэк технологий: </strong></p>
+                    <div class="stack-card" v-for="tech in teamStacks[team.id]" :key="tech">
+                      <p style="margin: 0;">{{ tech }}</p>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <p class="team-description" style="align-self: center;"><strong>Стэк отсутствует</strong></p>
+                  </div>
+                </div>
+
                 <div class="memberList">
                   <div class="team-title-panel members-panel">
                     <img class="user-avatar" v-if="teamsByMemberIdLeaders[team.id]?.id && memberAvatars[teamsByMemberIdLeaders[team.id]?.id ?? '']" 
@@ -153,6 +166,19 @@
                         <p class="team-description"><strong>Количество участников:</strong> {{ team.members.length + 1}}</p>
                     </div>
                 </div>
+
+                <div class="team-title-panel" style="max-width: 100%;">
+                  <div v-if="teamStacks[team.id]!.length > 0" class="stack-panel">
+                    <p class="team-description" style="align-self: center;"><strong>Стэк технологий: </strong></p>
+                    <div class="stack-card" v-for="tech in teamStacks[team.id]" :key="tech">
+                      <p style="margin: 0;">{{ tech }}</p>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <p class="team-description" style="align-self: center;"><strong>Стэк отсутствует</strong></p>
+                  </div>
+                </div>
+
                 <div class="memberList">
                   <div class="team-title-panel members-panel">
                     <img class="user-avatar" v-if="user?.id && memberAvatars[user.id ?? '']" 
@@ -420,6 +446,25 @@
     justify-content: space-between;
   }
 
+  .stack-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .stack-card {
+    display: flex;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #E0EEF8;
+    background-color: #41789C;
+  }
+
   @media screen and (max-width: 700px) {
     .team-info {
         flex-direction: column;
@@ -458,6 +503,9 @@ import { toast } from 'vue3-toastify';
   const requestsToTeam = ref<ITeamRequests[]>([])
 
   const memberAvatars = ref<Record<string, string>>({})
+
+  const teamStacks = ref<Record<number, string[]>>({})
+
 
 
   const teamIsEditing = ref<boolean>(false)
@@ -506,6 +554,16 @@ import { toast } from 'vue3-toastify';
     catch (error: any) {
       console.log(error.message)
     }
+  }
+
+  const loadStack = async (teamId: number): Promise<string[]> => {
+    try {
+    const response = await instance.get(`/teams/stack/${teamId}`);
+    return response.data; // Предполагаем, что сервер возвращает string[]
+  } catch (error) {
+    console.error(`Ошибка загрузки стека для команды ${teamId}:`, error);
+    return []; // Возвращаем пустой массив в случае ошибки
+  }
   }
   
   const loadMembersData = async (teamId: number, memberIds: string[]) => {
@@ -715,6 +773,18 @@ const clearTeamVariables = () => {
      teamsByMemberId.value.forEach(team => {
       loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading leaders:', error));
      })
+
+     await Promise.all(
+      teamsByMemberId.value.map(async team => {
+        teamStacks.value[team.id] = await loadStack(team.id)
+      })
+    )
+
+    await Promise.all(
+      teamsByLeaderId.value.map(async team => {
+        teamStacks.value[team.id] = await loadStack(team.id)
+      })
+    )
 
 
      requestsToTeam.value.forEach(request => {

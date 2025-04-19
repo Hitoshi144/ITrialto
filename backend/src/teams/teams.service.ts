@@ -187,7 +187,7 @@ async getTeamMembers(teamId: number) {
     if (team.status === 'close') {
       throw new BadRequestException(`Команда уже закрыта`);
     }
-  
+
     team.status = 'close';
     await this.teamRepository.save(team);
   
@@ -195,5 +195,39 @@ async getTeamMembers(teamId: number) {
       message: `Команда "${team.title}" теперь закрыта для вступления`,
       team 
     }
+  }
+
+  async getTeamStack(teamId: number) {
+    const team = await this.teamRepository.findOne({where: {id: teamId}})
+
+    if (!team) {
+      throw new BadRequestException(`Команда с id: ${teamId} не найдена`);
+    }
+
+    let stack: string[] = []
+
+    for (const memberId of team.members) {
+      const member = await this.userRepository.findOne({where: {id: memberId}})
+
+      if (!member) {
+        throw new BadRequestException(`Пользователь с id ${memberId} не найден`)
+      }
+
+      if (member.competencies != null) {
+        stack = [...stack, ...member.competencies]
+      }
+    }
+
+    const teamLeader = await this.userRepository.findOne({where: {id: team.teamLeaderId}})
+
+    if (!teamLeader) {
+      throw new BadRequestException('Тим-лидер команды не найден')
+    }
+
+    if (teamLeader.competencies != null) {
+      stack = [...stack, ...teamLeader.competencies]
+    }
+
+    return stack
   }
 }

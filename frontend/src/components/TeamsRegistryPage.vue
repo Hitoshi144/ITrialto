@@ -117,6 +117,22 @@
                 </div>
               </div>
 
+              <div v-if="teamStacks[props.row.id] != undefined && teamStacks[props.row.id]!.length > 0">
+              <div class="stack-panel">
+                <p class="description" style="align-self: center;">Стэк технологий: </p>
+                <div v-for="tech in teamStacks[props.row.id]" :key="tech">
+                  <div class="stack-card">
+                  <p>{{ tech }}</p>
+                  </div>
+                </div>
+                </div>
+              </div>
+              <div v-else>
+                <div class="stack-panel">
+                <p class="description">Стэк отсутствует</p>
+                </div>
+              </div>
+
               <div class="panel members-panel">
           <p class="members-title" style="text-align: center;">Участники</p>
           <div class="members-list">
@@ -198,6 +214,8 @@ import { toast } from 'vue3-toastify';
   const inWork = ref<boolean>(false)
 
   const searchRequest = ref<string>('')
+
+  const teamStacks = ref<Record<number, string[]>>({})
 
 
   const dateInterpretation = (date: string) => {
@@ -352,6 +370,16 @@ const sendRequestToTeam = async (teamId: number) => {
       toast.error(error)
     }
 }
+
+  const loadStack = async (teamId: number): Promise<string[]> => {
+    try {
+    const response = await instance.get(`/teams/stack/${teamId}`);
+    return response.data; // Предполагаем, что сервер возвращает string[]
+  } catch (error) {
+    console.error(`Ошибка загрузки стека для команды ${teamId}:`, error);
+    return []; // Возвращаем пустой массив в случае ошибки
+  }
+  } 
   
   onMounted(async () => {
   try {
@@ -365,6 +393,12 @@ const sendRequestToTeam = async (teamId: number) => {
       allUserIds.add(team.teamLeaderId);
       team.members.forEach(memberId => allUserIds.add(Number(memberId)));
     });
+
+    await Promise.all(
+      teams.value.map(async team => {
+        teamStacks.value[team.id] = await loadStack(team.id)
+      })
+    )
 
     await Promise.all([
       ...Array.from(allUserIds).map(id => fetchUserData(id)),
@@ -482,6 +516,36 @@ html, body {
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
     border: 1px solid rgba(141, 183, 202, 0.342);
+  }
+
+  .stack-panel {
+    background-color: white;
+    padding: 13px;
+    border-radius: 10px;
+    margin: 20px;
+    display: flex;
+    width: fit-content;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: 100%;
+    box-sizing: border-box;
+    background-color: rgba(65, 120, 156, 0.4);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid rgba(141, 183, 202, 0.342);
+  }
+
+  .stack-card {
+    display: flex;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #E0EEF8;
+    background-color: #41789C;
   }
 
   .teamTitle, .filters-title {
