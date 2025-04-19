@@ -48,13 +48,13 @@
 
                 <div class="team-title-panel" style="max-width: 100%;">
                   <div v-if="teamStacks[team.id]!.length > 0" class="stack-panel">
-                    <p class="team-description" style="align-self: center;"><strong>Стэк технологий: </strong></p>
+                    <p class="team-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
                     <div class="stack-card" v-for="tech in teamStacks[team.id]" :key="tech">
                       <p style="margin: 0;">{{ tech }}</p>
                     </div>
                   </div>
                   <div v-else>
-                    <p class="team-description" style="align-self: center;"><strong>Стэк отсутствует</strong></p>
+                    <p class="team-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
                   </div>
                 </div>
 

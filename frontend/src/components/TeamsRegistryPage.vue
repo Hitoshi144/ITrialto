@@ -119,7 +119,7 @@
 
               <div v-if="teamStacks[props.row.id] != undefined && teamStacks[props.row.id]!.length > 0">
               <div class="stack-panel">
-                <p class="description" style="align-self: center;">Стэк технологий: </p>
+                <p class="description" style="align-self: center;">Стек технологий: </p>
                 <div v-for="tech in teamStacks[props.row.id]" :key="tech">
                   <div class="stack-card">
                   <p>{{ tech }}</p>
@@ -129,7 +129,7 @@
               </div>
               <div v-else>
                 <div class="stack-panel">
-                <p class="description">Стэк отсутствует</p>
+                <p class="description">Стек отсутствует</p>
                 </div>
               </div>
 
