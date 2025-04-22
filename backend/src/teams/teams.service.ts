@@ -3,7 +3,6 @@ import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { Team } from './entities/team.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
 import { ArrayContains, EntityManager, In, Like, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { TeamRequestService } from 'src/team-request/team-request.service';
@@ -13,7 +12,6 @@ export class TeamsService {
   constructor(
     @InjectRepository(Team) private readonly teamRepository: Repository<Team>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    private readonly jwtService: JwtService,
     private readonly teamRequestService: TeamRequestService,
   ) {}
 

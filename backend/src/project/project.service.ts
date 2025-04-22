@@ -6,6 +6,7 @@ import { Project } from './entities/project.entity';
 import { Team } from 'src/teams/entities/team.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
+import { Rialto } from 'src/rialto/entities/rialto.entity';
 
 @Injectable()
 export class ProjectService {
@@ -16,6 +17,8 @@ export class ProjectService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Team)
     private readonly teamRepository: Repository<Team>,
+    @InjectRepository(Rialto)
+    private readonly rialtoRepository: Repository<Rialto>
   ) {}
 
   async createProject(createProjectDto: {
@@ -23,17 +26,27 @@ export class ProjectService {
     problem: string;
     solution: string;
     expectedResult: string;
-    stack: string;
+    stack: string[];
     customer?: string;
     userId: number;
+    rialtoId: number
   }) {
     const user = await this.userRepository.findOne({ where: { id: createProjectDto.userId } });
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
 
+    const rialto = await this.rialtoRepository.findOne({where: {id: createProjectDto.rialtoId}})
+    
+    if (!rialto) {
+      throw new BadRequestException('Биржа не найдена')
+    }
+
+    const pgArray = `{${createProjectDto.stack.join(",")}}`;
+    
     const project = this.projectRepository.create({
       ...createProjectDto,
+      stack: pgArray,
       status: 'pending',
     });
 

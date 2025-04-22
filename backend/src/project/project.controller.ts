@@ -15,8 +15,9 @@ export class ProjectController {
     problem: string;
     solution: string;
     expectedResult: string;
-    stack: string;
+    stack: string[];
     customer?: string;
+    rialtoId: number
   }, @Request() req) {
     try {
       return await this.projectService.createProject({

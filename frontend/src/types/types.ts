@@ -89,3 +89,25 @@ export interface ICreateTeamRequest {
     status: string
     createdAt: string
 }
+
+export interface IProjects {
+    id: number
+    title: string
+    problem: string
+    solution: string
+    expectedResult: string
+    customer: string
+    status: string
+    userId: number
+    teamId: number
+    createdAt: string
+    comment: string
+    stack: string
+    rialtoId: number
+}
+
+export interface IRialto {
+    id: number
+    title: string
+    projects: IProjects[]
+}

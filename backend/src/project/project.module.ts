@@ -7,9 +7,10 @@ import { User } from 'src/user/entities/user.entity';
 import { Project } from './entities/project.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Rialto } from 'src/rialto/entities/rialto.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Project, User, Team]),
+  imports: [TypeOrmModule.forFeature([Project, User, Team, Rialto]),
   JwtModule.registerAsync({
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => ({

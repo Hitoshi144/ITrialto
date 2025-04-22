@@ -1,7 +1,8 @@
 import { ProjectRequest } from "src/project-request/entities/project-request.entity";
+import { Rialto } from "src/rialto/entities/rialto.entity";
 import { Team } from "src/teams/entities/team.entity";
 import { User } from "src/user/entities/user.entity";
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
 export class Project {
@@ -20,7 +21,7 @@ export class Project {
     @Column({ type: 'text' })
     expectedResult: string;
 
-    @Column({ type: 'text' })
+    @Column( 'text', {nullable: true})
     stack: string;
 
     @Column({ nullable: true })
@@ -53,4 +54,11 @@ export class Project {
 
     @OneToMany(() => ProjectRequest, (request) => request.project)
     requests: ProjectRequest[];
+
+    @ManyToOne(() => Rialto, (rialto) => rialto.projects)
+    @JoinColumn({name: 'rialto_id'})
+    rialto: number
+
+    @Column({name: 'rialto_id', nullable: true})
+    rialtoId: number
 }

@@ -11,8 +11,8 @@
       </div>
       <nav>
         <div class="tabs">
-		<input type="radio" id="radio-1" name="tabs" :checked="route.name === 'projects-exchange'" />
-		<label class="tab" for="radio-1" @click="router.push({name: 'projects-exchange'})">Биржа проектов</label>
+		<input type="radio" id="radio-1" name="tabs" :checked="route.name === 'projects'" />
+		<label class="tab" for="radio-1" @click="router.push({name: 'projects'})">Биржа проектов</label>
 		<input type="radio" id="radio-2" name="tabs" :checked="route.name === 'teams-registry'"/>
 		<label class="tab" for="radio-2" @click="router.push({name: 'teams-registry'})"
     v-if="user?.role === 'teacher' || user?.role === 'student'"
