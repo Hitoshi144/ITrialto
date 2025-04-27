@@ -61,4 +61,14 @@ export class Project {
 
     @Column({name: 'rialto_id', nullable: true})
     rialtoId: number
+
+    @Column({nullable: true})
+    maxPeopleNumber: string
+
+    @Column({
+        type: 'enum',
+        enum: ['open', 'close'],
+        default: 'open'
+    })
+    recruitment: 'open' | 'close'
 }

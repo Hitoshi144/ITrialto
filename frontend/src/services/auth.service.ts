@@ -43,5 +43,11 @@ export const AuthService = {
             }
             throw error;
           }
+      },
+
+    parseStack(stack: string) {
+      if (stack != null) {
+        return stack.replace('{', '').replace('}', '').split(',')
       }
+    },
 }

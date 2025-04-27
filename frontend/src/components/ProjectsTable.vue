@@ -25,8 +25,38 @@
 
       </q-card>
     </q-dialog>
-    <pre>{{ projects }}</pre>
-    <pre>{{ rialtos }}</pre>
+    
+    <div class="projects">
+      <q-intersection once v-for="project in projects" :key="project.id" transition="scale">
+
+        <q-card flat bordered class="project-card">
+
+          <q-card-section>
+          <p class="project-title">{{ project.title }}</p>
+          <p class="project-description">{{ project.solution }}</p>
+          <p>Инициатор: {{ project.userId }}</p>
+
+          <div class="project-stack">
+          <div class="stack-card" v-for="stack in AuthService.parseStack(project.stack)" :key="stack">
+            <p>{{ stack }}</p>
+          </div>
+          </div>
+
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section>
+            <p>{{ statusInterp[project.status as keyof typeof statusInterp] }}</p>
+            <p v-if="project.maxPeopleNumber">Команда до {{ project.maxPeopleNumber }} человек</p>
+            <p>Подано заявок:</p>
+          </q-card-section>
+
+        </q-card>
+
+      </q-intersection>
+    </div>
+
     </div>
 </template>
 
@@ -117,11 +147,68 @@
     font-size: 28px;
     font-weight: 400;
   }
+
+  .projects {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Минимум 300px, максимум 1fr */
+    gap: 20px; /* Отступ между карточками */
+    width: 80vw;
+    max-width: 1200px; /* Ограничиваем максимальную ширину */
+    margin-top: 20px;
+    padding: 10px;
+    justify-content: center;
+  }
+
+  .project-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    border-radius: 10px;
+  }
+
+  .project-title {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: #41789C;
+  }
+
+  .project-description {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    opacity: 70%;
+    font-size: 16px;
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;    /* Макс. количество строк */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .project-stack {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .stack-card {
+    margin-right: 5px;
+    background-color: #41789C;
+    padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+
+    p {
+      margin: 0;
+      color: #E0EEF8;
+    }
+  }
 </style>
 
 <script setup lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
+import { AuthService } from 'src/services/auth.service';
 import type { IProjects, IRialto } from 'src/types/types';
 import { computed, onMounted, ref } from 'vue';
 
@@ -144,6 +231,14 @@ import { computed, onMounted, ref } from 'vue';
  const selectRialto = (rialtoId: number) => {
   currentRialtoId.value = rialtoId
   changeRialto.value = false
+ }
+
+ const statusInterp = {
+  'pending': 'На рассмотрении',
+  'published': 'Опубликован',
+  'in_progress': 'В работе',
+  'revision': 'На доработке',
+  'completed': 'Выполнен',
  }
 
  onMounted (async () => {

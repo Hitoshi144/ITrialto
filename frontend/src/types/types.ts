@@ -104,6 +104,7 @@ export interface IProjects {
     comment: string
     stack: string
     rialtoId: number
+    maxPeopleNumber: string
 }
 
 export interface IRialto {

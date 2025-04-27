@@ -18,6 +18,7 @@ export class ProjectController {
     stack: string[];
     customer?: string;
     rialtoId: number
+    maxPeopleNumber: string
   }, @Request() req) {
     try {
       return await this.projectService.createProject({
@@ -131,6 +132,7 @@ export class ProjectController {
       expectedResult?: string;
       stack?: string;
       customer?: string;
+      maxPeopleNumber: string
     }
   ) {
     try {
