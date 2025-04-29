@@ -27,14 +27,14 @@
     </q-dialog>
     
     <div class="projects">
-      <q-intersection once v-for="project in projects" :key="project.id" transition="scale">
+      <q-intersection once v-for="project in filteredProjects" :key="project.id" transition="scale">
 
         <q-card flat bordered class="project-card">
 
           <q-card-section>
           <p class="project-title">{{ project.title }}</p>
           <p class="project-description">{{ project.solution }}</p>
-          <p>Инициатор: {{ project.userId }}</p>
+          <p class="project-initiator">Инициатор: {{ initiators[project.id]?.firstname }} {{ initiators[project.id]?.lastname }}</p>
 
           <div class="project-stack">
           <div class="stack-card" v-for="stack in AuthService.parseStack(project.stack)" :key="stack">
@@ -47,9 +47,22 @@
           <q-separator />
 
           <q-card-section>
-            <p>{{ statusInterp[project.status as keyof typeof statusInterp] }}</p>
-            <p v-if="project.maxPeopleNumber">Команда до {{ project.maxPeopleNumber }} человек</p>
-            <p>Подано заявок:</p>
+            <div class="project-footer">
+          <div class="status-border" :style="{ borderColor: statusColors[project.status as keyof typeof statusColors]}">
+            <div class="dot"
+            :style="{ backgroundColor: statusColors[project.status as keyof typeof statusColors]}"
+            ></div>
+            <p :style="{ color: statusColors[project.status as keyof typeof statusColors]}">{{ statusInterp[project.status as keyof typeof statusInterp] }}</p>
+          </div>
+          <div v-if="project.maxPeopleNumber" style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 5px;">
+            <q-icon name="groups" color="primary" size="18px" />
+            <p class="project-footer-description">Команда до {{ project.maxPeopleNumber }} {{ maxPeopleNumberWord(project.maxPeopleNumber) }}</p>
+            </div>
+          <div style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 5px;">
+            <q-icon name="mail" color="primary" size="18px" />
+            <p class="project-footer-description">Подано заявок: {{ projectRequests[project.id] }}</p>
+            </div>
+          </div>
           </q-card-section>
 
         </q-card>
@@ -191,10 +204,15 @@
     flex-wrap: wrap;
   }
 
+  .project-initiator {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+  }
+
   .stack-card {
     margin-right: 5px;
-    background-color: #41789C;
     padding: 4px;
+    background-color: #41789C;
     border-radius: 10px;
     margin-bottom: 5px;
 
@@ -203,13 +221,48 @@
       color: #E0EEF8;
     }
   }
+
+  .project-footer {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .project-footer-description {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #41789C;
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .dot {
+    width: 9px;
+    height: 9px;
+    margin: 5px;
+    border-radius: 100%;
+  }
+
+  .status-border {
+    display: flex;
+    align-items: center;
+    width:fit-content;
+    padding: 2px;
+    border: 1px solid;
+    border-radius: 15px;
+
+    p {
+      margin: 0;
+      margin-right: 5px;
+    }
+  }
 </style>
 
 <script setup lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
-import type { IProjects, IRialto } from 'src/types/types';
+import type { IProjects, IRialto, IUser } from 'src/types/types';
 import { computed, onMounted, ref } from 'vue';
 
 
@@ -219,6 +272,28 @@ import { computed, onMounted, ref } from 'vue';
  const currentRialtoId = ref<number>(2)
 
  const changeRialto = ref<boolean>(false)
+
+ const initiators = ref<Record<string, IUser>>({})
+
+ const projectRequests = ref<Record<string, string | null>>({})
+
+ const statusColors = {
+  'pending': '#5C6BC0',
+  'published': '#43A047',
+  'in_progress': '#FB8C00',
+  'revision': '#8E24AA',
+  'completed': '#039BE5'
+ }
+
+ const maxPeopleNumberWord = (peopleNumber: string) => {
+  const peopleNumberInt = Number(peopleNumber)
+  if (peopleNumberInt % 10 === 1) {
+    return 'человека'
+  }
+  else {
+    return 'человек'
+  }
+ }
 
  const currentRialtoKey = computed(() => {
   return currentRialto.value?.id || 'not-found';
@@ -241,6 +316,31 @@ import { computed, onMounted, ref } from 'vue';
   'completed': 'Выполнен',
  }
 
+ const filteredProjects = computed(() => {
+  return projects.value.filter(project => project.rialtoId === currentRialtoId.value);
+});
+
+ const loadInitiatorData = async (projectId: number, initiatorId: number) => {
+  try {
+    const response = await instance.get<IUser>(`user/${initiatorId}`)
+    initiators.value[projectId] = response.data
+  }
+  catch (error: any) {
+    console.log(error)
+  }
+ }
+
+ const loadRequestsCount = async (projectId: number) => {
+  try {
+    const response = await instance.get(`project-request/project/${projectId}`)
+
+    projectRequests.value[projectId] = response.data.length
+  }
+  catch (error) {
+    console.log(error)
+  }
+ }
+
  onMounted (async () => {
   try {
     const [projectsResponse, rialtosResponse] = await Promise.all([
@@ -250,6 +350,14 @@ import { computed, onMounted, ref } from 'vue';
     
     projects.value = projectsResponse.data;
     rialtos.value = rialtosResponse.data;
+
+    projects.value.forEach(project => {
+      loadInitiatorData(project.id, project.userId).catch(error => console.error(error))
+    })
+
+    projects.value.forEach(project => {
+      loadRequestsCount(project.id).catch(error => console.error(error))
+    })
   }
   catch (error: any) {
     console.error(error.message)
