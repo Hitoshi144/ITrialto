@@ -335,7 +335,7 @@
   }
 
   .title-panel {
-    margin-top: 40px;
+    margin-top: 10px;
     padding: 10px;
     border-radius: 15px;
     background-color: #E0EEF8;

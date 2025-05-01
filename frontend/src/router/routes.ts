@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
       component: () => import('../components/RequestsModerationPage.vue'),
       meta: {requiresAuth: true}
     },
+    {
+      path: 'my-projects',
+      name: 'my-projects',
+      component: () => import('../components/MyProjects.vue'),
+      meta: {requiresAuth: true}
+    },
   ],
   },
 
