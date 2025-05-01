@@ -32,7 +32,7 @@
         <q-card flat bordered class="project-card">
 
           <q-card-section>
-          <p class="project-title">{{ project.title }}</p>
+          <p class="project-title" @click="openProjectPanel(project)">{{ project.title }}</p>
           <p class="project-description">{{ project.solution }}</p>
           <p class="project-initiator">Инициатор: {{ initiators[project.id]?.firstname }} {{ initiators[project.id]?.lastname }}</p>
 
@@ -70,6 +70,79 @@
       </q-intersection>
     </div>
 
+    <div class="project-panel" :class="{ 'panel-open': isProjectPanelOpen }">
+      <div class="panel-content">
+        <transition name="fade" mode="out-in">
+      <div v-if="selectedProject" :key="selectedProject.id">
+
+      <div style="display: flex; flex-direction: row; align-items: center;">
+        <q-btn 
+          round 
+          flat 
+          icon="chevron_right" 
+          class="close-btn" 
+          color="secondary"
+          @click="closeProjectPanel"
+        />
+          <h2 class="project-title-panel">{{ selectedProject.title }}</h2>
+        </div>
+
+        <div class="status-border side-panel-status-border" :style="{ borderColor: statusColors[selectedProject.status as keyof typeof statusColors]}">
+            <div class="dot"
+            :style="{ backgroundColor: statusColors[selectedProject.status as keyof typeof statusColors]}"
+            ></div>
+            <p :style="{ color: statusColors[selectedProject.status as keyof typeof statusColors]}">{{ statusInterp[selectedProject.status as keyof typeof statusInterp] }}</p>
+          </div>
+
+        <q-card flat class="project-info">
+          <q-card-section>
+            <p class="info-text"><span>Заказчик:</span> {{ selectedProject.customer }}</p>
+            <p class="info-text"><span>Инициатор:</span> {{ initiators[selectedProject.id]?.firstname }} {{ initiators[selectedProject.id]?.lastname }}</p>
+            <p class="info-text"><span>Статус:</span> Набор {{ recruitmentInterp[selectedProject.recruitment as keyof typeof recruitmentInterp] }}</p>
+            <p class="info-text"><span>Дата создания:</span> {{ formatDateToRussianShort(selectedProject.createdAt) }}</p>
+          </q-card-section>
+        </q-card>
+
+        <q-card flat class="project-info">
+          <q-card-section class="info-text-2" style="font-size: 16px;">
+            <span>Проблема</span>
+            <p>{{ selectedProject.problem }}</p>
+          </q-card-section>
+          <q-separator color="secondary" />
+          <q-card-section class="info-text-2" style="font-size: 16px;">
+            <span>Предлагаемое решение</span>
+            <p>{{ selectedProject.solution }}</p>
+          </q-card-section>
+          <q-separator color="secondary" />
+          <q-card-section class="info-text-2" style="font-size: 16px;">
+            <span>Ожидаемый результат</span>
+            <p>{{ selectedProject.expectedResult }}</p>
+          </q-card-section>
+          <q-separator color="secondary" />
+          <q-card-section class="info-text-2" style="font-size: 16px;">
+            <span>Стек</span>
+            <div class="project-stack">
+            <p v-for="stack in AuthService.parseStack(selectedProject.stack)" :key="stack" class="stack-card" style="color: #E0EEF8;">{{ stack }}</p>
+            </div>
+          </q-card-section>
+        </q-card>
+
+        <transition name="slide-down" mode="out-in">
+        <div v-if="teamSelecting">
+          <p class="info-text" style="margin-top: 10px;">Выберите команду</p>
+          <q-select filled clearable v-model="selectedTeam" :options="userTeams" option-label="title" :rules="[val => !!val || '']" />
+        </div>
+        </transition>
+        <q-btn :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" label="Подать заявку" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="teamSelecting === true && selectedTeam === null" />
+        <transition name="fade" mode="out-in">
+        <q-btn filled label="отмена" color="primary" class="send-request" @click="teamSelecting = false" v-if="teamSelecting" />
+        </transition>
+
+        </div>
+        </transition>
+      </div>
+    </div>
+
     </div>
 </template>
 
@@ -100,6 +173,18 @@
   .fade-leave-to {
     opacity: 0;
   }
+
+  /* Анимация slide-down */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
 
   .current-rialto {
     display: flex;
@@ -154,11 +239,40 @@
     border-radius: 10px;
   }
 
+  .info-text {
+    color: #41789C;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    margin-bottom: 5px;
+
+    span {
+      opacity: 70%;
+    }
+  }
+
+  .info-text-2 {
+    color: #41789C;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    margin-bottom: 5px;
+
+    span {
+      opacity: 70%;
+      margin-left: 10px;
+    }
+  }
+
   .select-rialto-title {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: #41789C;
     font-size: 28px;
     font-weight: 400;
+  }
+
+  .send-request {
+    border-radius: 10px;
+    margin-top: 20px;
+    margin-left: 5px;
   }
 
   .projects {
@@ -185,6 +299,11 @@
     font-size: 24px;
     font-weight: 500;
     color: #41789C;
+  }
+
+  .project-title:hover {
+    text-decoration: underline;
+    cursor: pointer;
   }
 
   .project-description {
@@ -256,26 +375,149 @@
       margin-right: 5px;
     }
   }
+
+  .side-panel-status-border {
+    justify-self: center;
+    margin: 10px;
+  }
+
+  .project-panel {
+  position: fixed;
+  top: 0;
+  right: -45%;
+  width: 45%;
+  height: 100vh;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(7px);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  border: 1px solid rgba(65, 120, 156, 0.5);
+  z-index: 1000;
+  border-radius: 10px 0 0 10px;
+  overflow-y: auto;
+}
+
+.project-info {
+  margin-top: 10px;
+}
+
+ @media screen and (max-width: 767px) {
+  .project-panel {
+    width: 75%;
+  }
+ }
+
+.panel-open {
+  right: 0;
+}
+
+.panel-content {
+  padding: 10px;
+  position: relative;
+}
+
+.close-btn {
+  background-color: rgba(65, 120, 156, 0.7);
+  z-index: 1010;
+  height: 20px;
+  border-radius: 10px;
+}
+
+.project-title-panel {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 32px;
+  margin: 0;
+  margin-left: 10px;
+  background-color: rgba(224, 238, 248, 0.8);
+  padding: 5px;
+  border-radius: 7px;
+  color: #41789C;
+  font-weight: 400;
+  width: 100%;
+  text-align: center;
+}
+
+/* Затемнение основного контента при открытой панели */
+.container::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 999;
+}
+
+.panel-open + .container::after {
+  opacity: 1;
+  pointer-events: auto;
+}
 </style>
 
 <script setup lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
-import type { IProjects, IRialto, IUser } from 'src/types/types';
+import type { IProjects, IRialto, ITeam, IUser } from 'src/types/types';
 import { computed, onMounted, ref } from 'vue';
+import { toast } from 'vue3-toastify';
 
 
  const projects = ref<IProjects[]>([])
  const rialtos = ref<IRialto[]>([])
 
+
  const currentRialtoId = ref<number>(2)
+
+ const selectedTeam = ref<ITeam | null>(null)
+
+ const userTeams = ref<ITeam[]>([])
+
+ const isProjectPanelOpen = ref(false)
+ const selectedProject = ref<IProjects | null>(null)
+
+ const teamSelecting = ref<boolean>(false)
+
+ const openProjectPanel = (project: IProjects) => {
+  selectedProject.value = project;
+  isProjectPanelOpen.value = true;
+};
+
+const closeProjectPanel = () => {
+  isProjectPanelOpen.value = false;
+  // Небольшая задержка перед очисткой, чтобы анимация закрытия завершилась
+  setTimeout(() => {
+    selectedProject.value = null;
+  }, 300);
+};
+
+function formatDateToRussianShort(isoDateString: string): string {
+  const date = new Date(isoDateString);
+  
+  const day = date.getDate();
+  const month = date.getMonth() + 1; // Месяцы начинаются с 0
+  const year = date.getFullYear();
+  
+  // Добавляем ведущий ноль для дней и месяцев меньше 10
+  const formattedDay = day < 10 ? `0${day}` : day;
+  const formattedMonth = month < 10 ? `0${month}` : month;
+  
+  return `${formattedDay}.${formattedMonth}.${year}`;
+}
+
+// Пример использования:
+const isoDate = "2025-04-22T11:38:42.410Z";
+console.log(formatDateToRussianShort(isoDate));
 
  const changeRialto = ref<boolean>(false)
 
  const initiators = ref<Record<string, IUser>>({})
 
- const projectRequests = ref<Record<string, string | null>>({})
+ const projectRequests = ref<Record<number, number | null>>({})
 
  const statusColors = {
   'pending': '#5C6BC0',
@@ -306,6 +548,11 @@ import { computed, onMounted, ref } from 'vue';
  const selectRialto = (rialtoId: number) => {
   currentRialtoId.value = rialtoId
   changeRialto.value = false
+ }
+
+ const recruitmentInterp = {
+  'open': 'открыт',
+  'close': 'закрыт'
  }
 
  const statusInterp = {
@@ -341,15 +588,30 @@ import { computed, onMounted, ref } from 'vue';
   }
  }
 
+ const sendRequest = async (projectId: number, teamId: number) => {
+  try {
+    await instance.post('project-request', {projectId, teamId})
+    teamSelecting.value = false
+    projectRequests.value[projectId] = (projectRequests.value[projectId] || 0) + 1
+    toast.success('Заявка подана')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+    toast.error(errorMessage);
+  }
+ }
+
  onMounted (async () => {
   try {
-    const [projectsResponse, rialtosResponse] = await Promise.all([
+    const [projectsResponse, rialtosResponse, teamsResponse] = await Promise.all([
       instance.get<IProjects[]>('project'),
-      instance.get<IRialto[]>('rialto')
+      instance.get<IRialto[]>('rialto'),
+      instance.get<ITeam[]>('teams')
     ]);
     
     projects.value = projectsResponse.data;
     rialtos.value = rialtosResponse.data;
+    userTeams.value = teamsResponse.data
 
     projects.value.forEach(project => {
       loadInitiatorData(project.id, project.userId).catch(error => console.error(error))

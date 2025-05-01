@@ -25,6 +25,7 @@ export interface IResponse {
     updateAt: string
     token: string
     competencies: string[]
+    leaderOfTeams: number[]
 }
 
 export interface IUser {
@@ -37,6 +38,7 @@ export interface IUser {
     role: string
     aboutMe: string
     competencies: string[]
+    leaderOfTeams: number[]
 }
 
 export interface IUserProfile {
@@ -105,6 +107,7 @@ export interface IProjects {
     stack: string
     rialtoId: number
     maxPeopleNumber: string
+    recruitment: string
 }
 
 export interface IRialto {
