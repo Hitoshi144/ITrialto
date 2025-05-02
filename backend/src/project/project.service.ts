@@ -137,12 +137,14 @@ export class ProjectService {
   }
 
   async resubmitProject(projectId: number, userId: number, updateData: {
-    title?: string;
-    problem?: string;
-    solution?: string;
-    expectedResult?: string;
-    stack?: string;
+    title: string;
+    problem: string;
+    solution: string;
+    expectedResult: string;
+    stack: string[];
     customer?: string;
+    rialtoId: number
+    maxPeopleNumber: string
   }) {
     const project = await this.projectRepository.findOne({ 
       where: { id: projectId, userId }
@@ -152,13 +154,16 @@ export class ProjectService {
       throw new NotFoundException('Проект не найден или у вас нет прав');
     }
 
-    if (project.status !== 'revision') {
-      throw new BadRequestException('Только проекты на доработке могут быть отправлены повторно');
+    if (project.status !== 'revision' && project.status !== 'pending') {
+      throw new BadRequestException('Только проекты на доработке или на рассмотрении могут быть отправлены повторно');
     }
+
+    const pgArray = `{${updateData.stack.join(",")}}`
 
     Object.assign(project, updateData);
     project.status = 'pending';
     project.comment = null;
+    project.stack = pgArray
     return await this.projectRepository.save(project);
   }
 }

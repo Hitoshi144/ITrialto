@@ -103,7 +103,7 @@
                 </q-card-section>
                 <q-card-section>
                   <div style="display: flex; justify-content: center;">
-                  <q-btn filled color="primary" label="подать заявку" @click="sendTeamCreatingRequest()" />
+                  <q-btn filled color="primary" label="подать заявку" @click="sendTeamCreatingRequest()" style="border-radius: 10px;" />
                   </div>
                 </q-card-section>
               </q-card>
@@ -113,7 +113,7 @@
                 <q-separator />
                 <div class="teams-header" style="align-items: center;">
                 <p class="team-title">{{ team.title }}</p>
-                <q-btn outline color="primary" :label="requestsToTeam.filter(req => req.teamId === team.id).length + ' ' + requestWordInterpretation(requestsToTeam.filter(req => req.teamId === team.id).length) + ' в команду'" style="height: 20px; border-radius: 10px;" @click="showRequestToTeam = true"  :disable="requestsToTeam.filter(req => req.teamId === team.id).length != 0 ? false : true" />
+                <q-btn outline color="primary" :label="requestsToTeam.filter(req => req.teamId === team.id).length + ' ' + requestWordInterpretation(requestsToTeam.filter(req => req.teamId === team.id).length) + ' в команду'" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="showRequestToTeam = true"  :disable="requestsToTeam.filter(req => req.teamId === team.id).length != 0 ? false : true" />
 
                   <q-dialog v-model="showRequestToTeam" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
                     <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
@@ -169,13 +169,13 @@
 
                 <div class="team-title-panel" style="max-width: 100%;">
                   <div v-if="teamStacks[team.id]!.length > 0" class="stack-panel">
-                    <p class="team-description" style="align-self: center;"><strong>Стэк технологий: </strong></p>
+                    <p class="team-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
                     <div class="stack-card" v-for="tech in teamStacks[team.id]" :key="tech">
                       <p style="margin: 0;">{{ tech }}</p>
                     </div>
                   </div>
                   <div v-else>
-                    <p class="team-description" style="align-self: center;"><strong>Стэк отсутствует</strong></p>
+                    <p class="team-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
                   </div>
                 </div>
 

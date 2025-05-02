@@ -11,11 +11,21 @@
           class="text-primary beautiful-bg"
           style="position:sticky; align-self: flex-start; top: 60px; height: fit-content;"
         >
-          <q-tab name="published" icon="groups" label="Опубликованные" style="border-radius: 20px 0 0 0; border: 1px solid rgba(65, 120, 156, 0.5);" />
-          <q-tab name="pending" icon="person" label="На рассмотрении" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
-          <q-tab name="in_progress" icon="person" label="В работе" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
-          <q-tab name="complete" icon="person" label="Выполненные" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
-          <q-tab name="revision" icon="more_time" label="На доработке" style="border-radius: 0 0 0 20px; border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;" />
+          <q-tab name="published" icon="publish" label="Опубликованные" style="border-radius: 20px 0 0 0; border: 1px solid rgba(65, 120, 156, 0.5);">
+            <q-badge :label="publishedProjects?.length" />
+          </q-tab>
+          <q-tab name="pending" icon="schedule_send" label="На рассмотрении" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
+            <q-badge :label="pendingProjects?.length" />
+          </q-tab>
+          <q-tab name="in_progress" icon="construction" label="В работе" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
+            <q-badge :label="inProgressProjects?.length" />
+          </q-tab>
+          <q-tab name="complete" icon="verified" label="Выполненные" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
+            <q-badge :label="completeProjects?.length" />
+          </q-tab>
+          <q-tab name="revision" icon="report" label="На доработке" style="border-radius: 0 0 0 20px; border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
+            <q-badge :label="revisionProjects?.length" />
+          </q-tab>
         </q-tabs>
   
         <q-tab-panels
@@ -31,40 +41,263 @@
 
     <q-tab-panel name="published">
         <div class="projects-header">
-        <p class="projects-lenght">Проектов: {{ publishedProjects?.length }}</p>
+        <p class="projects-lenght">Опубликованных проектов: {{ publishedProjects?.length }}</p>
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
         </div>
+
         <div v-for="project in publishedProjects" :key="project.id">
-            <q-separator />
-            <p>{{ project.title }}</p>
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
         </div>
     </q-tab-panel>
 
     <q-tab-panel name="pending">
+
         <div class="projects-header">
-        <p class="projects-lenght">Проектов: {{ pendingProjects?.length }}</p>
+        <p class="projects-lenght">Проектов на рассмотрении: {{ pendingProjects?.length }}</p>
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
         </div>
+
+        <div v-for="project in pendingProjects" :key="project.id">
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
+        </div>
+
     </q-tab-panel>
 
     <q-tab-panel name="in_progress">
         <div class="projects-header">
-        <p class="projects-lenght">Проектов: {{ inProgressProjects?.length }}</p>
+        <p class="projects-lenght">Проектов в работе: {{ inProgressProjects?.length }}</p>
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        </div>
+
+        <div v-for="project in inProgressProjects" :key="project.id">
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
         </div>
     </q-tab-panel>
 
     <q-tab-panel name="complete">
         <div class="projects-header">
-        <p class="projects-lenght">Проектов: {{ completeProjects?.length }}</p>
+        <p class="projects-lenght">Выполненных проектов: {{ completeProjects?.length }}</p>
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        </div>
+
+        <div v-for="project in completeProjects" :key="project.id">
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
         </div>
     </q-tab-panel>
 
     <q-tab-panel name="revision">
         <div class="projects-header">
-        <p class="projects-lenght">Проектов: {{ revisionProjects?.length }}</p>
+        <p class="projects-lenght">Проектов на доработке: {{ revisionProjects?.length }}</p>
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        </div>
+
+        <div v-for="project in revisionProjects" :key="project.id">
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
         </div>
     </q-tab-panel>
 
@@ -75,8 +308,8 @@
         <q-card flat bordered class="edit-card beautiful-bg-2">
 
             <q-card-section>
-                  <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
-                  <p class="text-h5 bg-card" style="color: #41789C; margin: 0;">Создание проекта</p>
+                  <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;" class="bg-card">
+                  <p class="text-h5" style="color: #41789C; margin: 0;">Создание проекта</p>
                   <q-btn flat color="primary" rounded icon="close" v-close-popup class="bg-card" />
                   </div>
                 </q-card-section>
@@ -251,7 +484,7 @@
   }
 
   .bg-card {
-    background-color: #E0EEF8;
+    background-color: white;
     padding: 5px;
     border-radius: 10px;
   }
@@ -280,6 +513,78 @@
   color: #41789C;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-size: 16px;
+}
+
+.project-title {
+  margin: 15px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: #41789C;
+}
+
+.project-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.project-title-panel {
+  display: flex;
+  justify-self: flex-start;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  background-color: #E0EEF8;
+  max-width: 100%;
+  padding: 15px;
+  border-radius: 15px;
+  border: 1px solid rgba(141, 183, 202, 0.342);
+}
+
+.about-project {
+  margin-left: 20px;
+}
+
+.project-description {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: 0;
+  font-size: 16px;
+  color: #41789C;
+  font-weight: 400;
+  word-wrap: break-word;
+}
+
+.stack-panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+.stack-card {
+  display: flex;
+  margin: 5px;
+  padding: 5px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #E0EEF8;
+  background-color: #41789C;
+}
+
+@media screen and (max-width: 800px) {
+  .projects-header {
+    flex-direction: column;
+  }
+
+  .project-info {
+    flex-direction: column-reverse;
+  }
+
+  .about-project {
+    margin-left: 0;
+  }
 }
 </style>
 
@@ -317,6 +622,8 @@ const projectRialto = ref<IRialto>()
 const projectMaxPeopleNumber = ref<string>('')
 const projectStack = ref<string[]>([])
 
+const projectStacks = ref<Record<number, string[]>>({})
+
 const concatStack = () => {
     projectStack.value = Object.keys(selectedStack.value).filter(el => selectedStack.value[el])
     return projectStack.value
@@ -327,6 +634,11 @@ const clearStack = () => {
     frameworks.forEach(framework => selectedStack.value[framework] = false)
     databases.forEach(db => selectedStack.value[db] = false)
     devops.forEach(devop => selectedStack.value[devop] = false)
+}
+
+const recruitmentInterp = {
+  'open': 'открыт',
+  'close': 'закрыт'
 }
 
 const isCurrentStepValid = computed(() => {
@@ -388,7 +700,7 @@ maxPeopleNumber: string) => {
     try {
         const stack = concatStack()
 
-        await instance.post('project', {title, 
+         const project = await instance.post<any, IProjects>('project', {title, 
             problem,
             solution,
             expectedResult,
@@ -400,6 +712,7 @@ maxPeopleNumber: string) => {
 
         projectIsCreating.value = false
         toast.success('Заявка отправлена')
+        publishedProjects.value?.push(project)
     }
     catch (error: any) {
         const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
@@ -410,6 +723,10 @@ maxPeopleNumber: string) => {
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data
     rialtos.value = (await instance.get('rialto')).data
+
+    myProjects.value?.forEach(project => {
+      projectStacks.value[project.id] = project.stack.replace('{', '').replace('}', '').split(',')
+    })
 
     publishedProjects.value = myProjects.value?.filter(project => project.status === 'published') || null
     pendingProjects.value = myProjects.value?.filter(project => project.status === 'pending') || null

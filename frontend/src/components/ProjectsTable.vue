@@ -133,7 +133,7 @@
           <q-select filled clearable v-model="selectedTeam" :options="userTeams" option-label="title" :rules="[val => !!val || '']" />
         </div>
         </transition>
-        <q-btn :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" label="Подать заявку" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="teamSelecting === true && selectedTeam === null" />
+        <q-btn v-if="selectedProject.status === 'published'" :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" label="Подать заявку" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="teamSelecting === true && selectedTeam === null" />
         <transition name="fade" mode="out-in">
         <q-btn filled label="отмена" color="primary" class="send-request" @click="teamSelecting = false" v-if="teamSelecting" />
         </transition>

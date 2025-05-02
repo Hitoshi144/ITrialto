@@ -92,9 +92,9 @@ export class ProjectController {
 
   @Patch(':id/reject')
   @UseGuards(JwtAuthGuard)
-  async rejectProject(@Param('id') id: string, @Body() body: { comment: string }) {
+  async rejectProject(@Param('id') id: string) {
     try {
-      return await this.projectService.updateProjectStatus(+id, 'rejected', body.comment);
+      return await this.projectService.updateProjectStatus(+id, 'rejected');
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -126,12 +126,13 @@ export class ProjectController {
     @Param('id') id: string,
     @Request() req,
     @Body() updateData: {
-      title?: string;
-      problem?: string;
-      solution?: string;
-      expectedResult?: string;
-      stack?: string;
+      title: string;
+      problem: string;
+      solution: string;
+      expectedResult: string;
+      stack: string[];
       customer?: string;
+      rialtoId: number
       maxPeopleNumber: string
     }
   ) {
