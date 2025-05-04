@@ -68,7 +68,7 @@ export class Project {
     @Column({
         type: 'enum',
         enum: ['open', 'close'],
-        default: 'open'
+        default: 'close'
     })
     recruitment: 'open' | 'close'
 }

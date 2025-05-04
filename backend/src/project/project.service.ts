@@ -50,7 +50,9 @@ export class ProjectService {
       status: 'pending',
     });
 
-    return await this.projectRepository.save(project);
+    await this.projectRepository.save(project);
+
+    return project
   }
 
   async updateProjectStatus(id: number, status: 'published' | 'revision' | 'rejected', comment?: string) {
@@ -62,6 +64,10 @@ export class ProjectService {
     project.status = status;
     if (comment) {
       project.comment = comment;
+    }
+
+    if (status === 'published') {
+      project.recruitment = 'open'
     }
 
     return await this.projectRepository.save(project);
@@ -133,6 +139,7 @@ export class ProjectService {
 
     project.status = 'completed';
     project.teamId = null;
+    project.recruitment = 'close'
     return await this.projectRepository.save(project);
   }
 

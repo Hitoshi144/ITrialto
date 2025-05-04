@@ -141,6 +141,10 @@
             </div>
           </div>
 
+          <div style="margin-top: 20px; margin-bottom: 30px;">
+            <q-btn filled color="primary" label="Изменить" style="border-radius: 10px;" />
+          </div>
+
         </div>
 
     </q-tab-panel>
@@ -376,7 +380,7 @@
                         <p class="stepper-description">Укажите <u>заказчика</u> проекта, на какую <u>биржу</u> он будет опубликован, а также какое <u>максимальное количество человек</u> потребуется для реализации</p>
                         <q-input v-model="projectCustomer" outlined autofocus label="Заказчик" />
                         <q-select outlined clearable v-model="projectRialto" :options="rialtos" option-label="title" :rules="[val => !!val || '']" label="Биржа" style="margin-top: 20px;" />
-                        <q-input v-model="projectMaxPeopleNumber" outlined autofocus label="Макс. кол-во человек" />
+                        <q-input v-model="projectMaxPeopleNumber" outlined label="Макс. кол-во человек" type="number" />
 
                     </q-step>
 
@@ -602,6 +606,7 @@ const tab = ref<string>('published')
 const step = ref<number>(1)
 const stepper = ref<QStepper | null>(null)
 const projectIsCreating = ref<boolean>(false)
+const projectIsResubmit = ref<boolean>(false)
 const selectedStack = ref<Record<string, boolean>>({})
 
 const myProjects = ref<IProjects[] | null>(null)
@@ -700,7 +705,7 @@ maxPeopleNumber: string) => {
     try {
         const stack = concatStack()
 
-         const project = await instance.post<any, IProjects>('project', {title, 
+         const project = (await instance.post('project', {title, 
             problem,
             solution,
             expectedResult,
@@ -708,11 +713,14 @@ maxPeopleNumber: string) => {
             customer,
             rialtoId,
             maxPeopleNumber
-        })
+        })).data
 
         projectIsCreating.value = false
+        projectIsResubmit.value = false
         toast.success('Заявка отправлена')
-        publishedProjects.value?.push(project)
+        projectStacks.value[project.id] = stack
+        pendingProjects.value = [...(pendingProjects.value || []), project]
+
     }
     catch (error: any) {
         const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';

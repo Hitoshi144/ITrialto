@@ -62,9 +62,21 @@
               <p class="main-text"><strong>Стек:</strong> {{ projectStacks[request.id] }}</p>
               <p class="main-text"><strong>Дата подачи:</strong> {{ dateInterpretation(request.createdAt) }}</p>
 
+              <transition name="slide" mode="out-in">
+              <div v-if="isRevision && request.id === selectedToRevisionProject?.id">
+                <q-input outlined autofocus autogrow v-model="revisionComment" label="Введите причину" :rules="[val => !!val || '*поле обязательно для заполнения']" />
+              </div>
+              </transition>
+
               <div style="margin-top: 30px; margin-bottom: 20px; display: flex; flex-direction: row; justify-content: space-around;">
-                    <q-btn filled color="primary" label="Опубликовать" style="border-radius: 10px; width: 150px;" @click="publishProject(request.id)" />
-                    <q-btn outline color="primary" label="Отклонить" style="border-radius: 10px; width: 150px;" @click="rejectProject(request.id)" />
+                <transition name="fade" mode="out-in">
+                    <q-btn v-if="!isRevision || request.id !== selectedToRevisionProject?.id" filled color="primary" label="Опубликовать" style="border-radius: 10px; width: 150px;" @click="publishProject(request.id)" />
+                    </transition>
+                    <q-btn :outline="isRevision && request.id === selectedToRevisionProject?.id ? false : true" :filled="(isRevision && request.id === selectedToRevisionProject?.id) ? true : false" color="primary" label="На доработку" style="border-radius: 10px; width: 150px;" @click="isRevision && request.id === selectedToRevisionProject?.id ? sendProjectToRevision(request.id) : selectProject(request)" />
+                <transition name="fade" mode="out-in">
+                    <q-btn v-if="isRevision && request.id === selectedToRevisionProject?.id" outline label="отмена" color="primary" style="border-radius: 10px; width: 150px;" @click="cancelRevision" />
+                    <q-btn v-else-if="!isRevision || request.id !== selectedToRevisionProject?.id" outline color="primary" label="Отклонить" style="border-radius: 10px; width: 150px;" @click="rejectProject(request.id)" />
+                    </transition>
                 </div>
 
               <q-separator color="primary" v-if="request.id != createProjectRequests[createProjectRequests.length - 1]?.id" />
@@ -116,6 +128,54 @@
     word-wrap: break-word;
   }
 
+  .slide-enter-active {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+.slide-leave-active {
+  animation: slide-out 0.3s ease-in forwards;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* Общие стили для анимации */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+/* Начальное и конечное состояния */
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Можно явно указать конечное состояние (не обязательно) */
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+}
+
 </style>
 
 <script setup lang="ts">
@@ -139,6 +199,11 @@ import { toast } from 'vue3-toastify';
 
  const projectInitiators = ref<Record<number, IUser>>({})
 
+ const isRevision = ref<boolean>(false)
+ const revisionComment = ref<string>('')
+
+ const selectedToRevisionProject = ref<IProjects | null>(null)
+
  const rialtos = ref<IRialto[]>([])
 
  const loadAvatar = async (userId: number): Promise<void> => {
@@ -155,6 +220,36 @@ import { toast } from 'vue3-toastify';
     console.error(`Ошибка загрузки аватара пользователя ${userId}:`, error);
   }
 };
+
+const selectProject = (project: IProjects) => {
+  selectedToRevisionProject.value = project
+  isRevision.value = true
+  revisionComment.value = ''
+}
+
+const cancelRevision = () => {
+  selectedToRevisionProject.value = null
+  isRevision.value = false
+  revisionComment.value = ''
+}
+
+const sendProjectToRevision = async (projectId: number) => {
+  try {
+    if (revisionComment.value.length === 0) {
+      return toast.error('Введите причину')
+    }
+    await instance.patch(`project/${projectId}/revision`, {comment: revisionComment.value})
+    cancelRevision()
+
+    createProjectRequests.value = createProjectRequests.value.filter(req => req.id !== projectId)
+
+    toast.success('Отправлено на доработку')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+    toast.error(errorMessage);
+  }
+}
 
 const getInitiator = async (requestId: number, userId: number) => {
   try {
