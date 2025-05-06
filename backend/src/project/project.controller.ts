@@ -142,4 +142,15 @@ export class ProjectController {
       throw new BadRequestException(error.message);
     }
   }
+
+  @Delete(':id/delete')
+  @UseGuards(JwtAuthGuard)
+  async deleteProject(@Param('id') id: number){
+    try {
+      return await this.projectService.deleteProject(id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
 }

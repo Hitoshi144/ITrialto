@@ -42,7 +42,7 @@
     <q-tab-panel name="published">
         <div class="projects-header">
         <p class="projects-lenght">Опубликованных проектов: {{ publishedProjects?.length }}</p>
-        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
         <div v-for="project in publishedProjects" :key="project.id">
@@ -88,6 +88,8 @@
             </div>
           </div>
 
+          <q-btn outline color="primary" label="удалить" icon="delete_forever" style="display: flex; justify-self: flex-end; border-radius: 10px; margin-bottom: 20px; margin-top: 20px;" @click="projectIsDeleting = true; selectedProject = project" />
+
         </div>
     </q-tab-panel>
 
@@ -95,7 +97,7 @@
 
         <div class="projects-header">
         <p class="projects-lenght">Проектов на рассмотрении: {{ pendingProjects?.length }}</p>
-        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
         <div v-for="project in pendingProjects" :key="project.id">
@@ -141,8 +143,9 @@
             </div>
           </div>
 
-          <div style="margin-top: 20px; margin-bottom: 30px;">
-            <q-btn filled color="primary" label="Изменить" style="border-radius: 10px;" />
+          <div style="margin-top: 20px; margin-bottom: 30px; display: flex; justify-content: space-between;">
+            <q-btn filled color="primary" label="Изменить" style="border-radius: 10px;" @click="projectIsEditing(project)" />
+            <q-btn outline color="primary" label="удалить" icon="delete_forever" style="border-radius: 10px;" @click="projectIsDeleting = true; selectedProject = project" />
           </div>
 
         </div>
@@ -152,7 +155,7 @@
     <q-tab-panel name="in_progress">
         <div class="projects-header">
         <p class="projects-lenght">Проектов в работе: {{ inProgressProjects?.length }}</p>
-        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
         <div v-for="project in inProgressProjects" :key="project.id">
@@ -204,7 +207,7 @@
     <q-tab-panel name="complete">
         <div class="projects-header">
         <p class="projects-lenght">Выполненных проектов: {{ completeProjects?.length }}</p>
-        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
         <div v-for="project in completeProjects" :key="project.id">
@@ -256,7 +259,7 @@
     <q-tab-panel name="revision">
         <div class="projects-header">
         <p class="projects-lenght">Проектов на доработке: {{ revisionProjects?.length }}</p>
-        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true" />
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
         <div v-for="project in revisionProjects" :key="project.id">
@@ -302,6 +305,13 @@
             </div>
           </div>
 
+          <p class="revisionComment"><strong>Причина:</strong> {{ project.comment }}</p>
+
+          <div style="margin-top: 20px; margin-bottom: 30px; display: flex; justify-content: space-between;">
+            <q-btn filled color="primary" label="Изменить" style="border-radius: 10px;" @click="projectIsEditing(project)" />
+            <q-btn outline color="primary" label="удалить" icon="delete_forever" style="border-radius: 10px;" @click="projectIsDeleting = true; selectedProject = project" />
+          </div>
+
         </div>
     </q-tab-panel>
 
@@ -313,8 +323,9 @@
 
             <q-card-section>
                   <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;" class="bg-card">
-                  <p class="text-h5" style="color: #41789C; margin: 0;">Создание проекта</p>
-                  <q-btn flat color="primary" rounded icon="close" v-close-popup class="bg-card" />
+                  <p v-if="projectIsResubmit === false" class="text-h5" style="color: #41789C; margin: 0;">Создание проекта</p>
+                  <p v-else class="text-h5" style="color: #41789C; margin: 0;">Редактирование проекта</p>
+                  <q-btn flat color="primary" rounded icon="close" v-close-popup class="bg-card" @click="clearVariables" />
                   </div>
                 </q-card-section>
 
@@ -392,7 +403,7 @@
                             </Transition>
                         <Transition name="fade" mode="out-in">
                         <q-btn v-if="step != 6" @click="goNext" color="primary" label="Далее" icon-right="chevron_right" style="border-radius: 10px;" :disable="!isCurrentStepValid" />
-                        <q-btn v-else-if="step === 6" filled color="primary" label="Подать заявку" style="border-radius: 10px;" :disable="!isCurrentStepValid" @click="submitProject" />
+                        <q-btn v-else-if="step === 6" filled color="primary" :label="projectIsResubmit ? 'Отправить повторно' : 'Подать заявку'" style="border-radius: 10px;" :disable="!isCurrentStepValid" @click="projectIsResubmit === true ? submitProject(selectedProject?.id) : submitProject()" />
                     </Transition>
                       </q-stepper-navigation>
                     </template>
@@ -401,6 +412,26 @@
 
         </q-card>
     </q-dialog>
+
+    <q-dialog v-model="projectIsDeleting" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade" @before-hide="clearVariables()">
+                    <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+                      <q-card-section>
+                        <div style="display: flex; justify-content: space-between; flex-direction: row;">
+                          <p class="text-h5" style="color: #41789C;">Удаление проекта</p>
+                        <q-btn flat color="primary" rounded icon="close" v-close-popup />
+                        </div>
+                      </q-card-section>
+                      <q-card-section>
+                        <p class="text-h6" style="color: #41789C; margin-left: 30px;">Вы уверены, что хотите <span style="color: #eb6449;">удалить</span> проект "{{ selectedProject?.title }}"?</p>
+                      </q-card-section>
+                      <q-card-section>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                          <q-btn outline color="negative" style="border-radius: 10px; margin-left: 20px;" label="Да, удалить" @click="deleteProject(selectedProject!.id)" />
+                          <q-btn filled color="primary" style="border-radius: 10px; margin-right: 20px;" label="Нет, оставить" @click="projectIsDeleting = false" />
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </q-dialog>
 
     </div>
 </template>
@@ -577,6 +608,15 @@
   background-color: #41789C;
 }
 
+.revisionComment {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #eb6449;
+  font-size: 16px;
+  border: 1px solid #eb6449;
+  padding: 7px;
+  border-radius: 10px;
+}
+
 @media screen and (max-width: 800px) {
   .projects-header {
     flex-direction: column;
@@ -607,7 +647,10 @@ const step = ref<number>(1)
 const stepper = ref<QStepper | null>(null)
 const projectIsCreating = ref<boolean>(false)
 const projectIsResubmit = ref<boolean>(false)
+const projectIsDeleting = ref<boolean>(false)
 const selectedStack = ref<Record<string, boolean>>({})
+
+const selectedProject = ref<IProjects | null>()
 
 const myProjects = ref<IProjects[] | null>(null)
 const rialtos = ref<IRialto[]>()
@@ -623,15 +666,49 @@ const projectProblem = ref<string>('')
 const projectSolution = ref<string>('')
 const projectExpectedResult = ref<string>('')
 const projectCustomer = ref<string>('')
-const projectRialto = ref<IRialto>()
+const projectRialto = ref<IRialto | null>()
 const projectMaxPeopleNumber = ref<string>('')
 const projectStack = ref<string[]>([])
 
 const projectStacks = ref<Record<number, string[]>>({})
 
+const projectIsEditing = (project: IProjects) => {
+  step.value = 1
+  Object.keys(selectedStack.value).forEach((tech: string) => {selectedStack.value[tech] = false})
+  projectIsCreating.value = true
+  projectIsResubmit.value = true
+
+  selectedProject.value = project
+
+  projectTitle.value = project.title
+  projectProblem.value = project.problem
+  projectSolution.value = project.solution
+  projectExpectedResult.value = project.expectedResult
+  projectCustomer.value = project.customer
+  projectRialto.value = rialtos.value?.find(rialto => rialto.id === project.rialtoId)
+  projectMaxPeopleNumber.value = project.maxPeopleNumber
+
+  project.stack.replace('{', '').replace('}', '').split(',').forEach(tech => selectedStack.value[tech] = true)
+}
+
 const concatStack = () => {
     projectStack.value = Object.keys(selectedStack.value).filter(el => selectedStack.value[el])
     return projectStack.value
+}
+
+const clearVariables = () => {
+  projectIsCreating.value = false
+  projectIsResubmit.value = false
+  clearStack()
+  selectedProject.value = null
+
+  projectTitle.value = ''
+  projectProblem.value = ''
+  projectSolution.value = ''
+  projectExpectedResult.value = ''
+  projectCustomer.value = ''
+  projectMaxPeopleNumber.value = ''
+  projectRialto.value = null
 }
 
 const clearStack = () => {
@@ -678,7 +755,7 @@ const goNext = () => {
   }
 };
 
-const submitProject = async () => {
+const submitProject = async (id?: number) => {
   if (!isCurrentStepValid.value) {
     toast.error('Заполните все обязательные поля');
     return;
@@ -691,7 +768,8 @@ const submitProject = async () => {
     projectExpectedResult.value,
     projectCustomer.value,
     projectRialto.value!.id,
-    projectMaxPeopleNumber.value
+    projectMaxPeopleNumber.value,
+    id
   );
 };
 
@@ -701,11 +779,15 @@ solution: string,
 expectedResult: string, 
 customer: string, 
 rialtoId: number, 
-maxPeopleNumber: string) => {
+maxPeopleNumber: string,
+id?: number) => {
     try {
         const stack = concatStack()
+        let project: IProjects
 
-         const project = (await instance.post('project', {title, 
+        if (projectIsResubmit.value === true) {
+          project = (await instance.patch(`project/${id}/resubmit`, {
+            title, 
             problem,
             solution,
             expectedResult,
@@ -713,16 +795,50 @@ maxPeopleNumber: string) => {
             customer,
             rialtoId,
             maxPeopleNumber
-        })).data
+          })).data
+
+          revisionProjects.value = revisionProjects.value!.filter(projects => projects.id !== project!.id)
+          pendingProjects.value = pendingProjects.value!.filter(projects => projects.id !== project!.id)
+        } 
+        
+        else {
+          project = (await instance.post('project', {title, 
+              problem,
+              solution,
+              expectedResult,
+              stack,
+              customer,
+              rialtoId,
+              maxPeopleNumber
+          })).data
+      }
 
         projectIsCreating.value = false
         projectIsResubmit.value = false
+        clearVariables()
         toast.success('Заявка отправлена')
-        projectStacks.value[project.id] = stack
+        projectStacks.value[project!.id] = stack
         pendingProjects.value = [...(pendingProjects.value || []), project]
 
     }
     catch (error: any) {
+        const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+    }
+}
+
+const deleteProject = async (projectId: number) => {
+  try {
+    await instance.delete(`project/${projectId}/delete`)
+
+    pendingProjects.value = pendingProjects.value!.filter(projects => projects.id !== projectId)
+    revisionProjects.value = revisionProjects.value!.filter(projects => projects.id !== projectId)
+    publishedProjects.value = publishedProjects.value!.filter(projects => projects.id !== projectId)
+
+    toast.success('Проект удален')
+    projectIsDeleting.value = false
+  }
+  catch (error: any) {
         const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
         toast.error(errorMessage);
     }

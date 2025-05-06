@@ -173,4 +173,24 @@ export class ProjectService {
     project.stack = pgArray
     return await this.projectRepository.save(project);
   }
+
+  async deleteProject(projectId: number): Promise<void> {
+    const project = await this.projectRepository.findOne({ 
+      where: { id: projectId }
+    });
+  
+    if (!project) {
+      throw new NotFoundException('Проект не найден или у вас нет прав на его удаление');
+    }
+  
+    if (['in_progress', 'completed'].includes(project.status)) {
+      throw new BadRequestException('Нельзя удалить проект в работе или завершенный проект');
+    }
+  
+    try {
+      await this.projectRepository.delete(projectId);
+    } catch (error) {
+      throw new BadRequestException('Не удалось удалить проект');
+    }
+  }
 }
