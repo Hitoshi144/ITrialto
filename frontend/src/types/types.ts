@@ -115,3 +115,13 @@ export interface IRialto {
     title: string
     projects: IProjects[]
 }
+
+export interface IToProjectRequest {
+    id: number
+    teamId: number
+    team: ITeam
+    projectId: number
+    project: IProjects
+    status: string
+    createdAt: string
+}

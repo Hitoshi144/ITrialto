@@ -49,7 +49,7 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
+            <q-btn outline color="primary" :label="toProjectRequests[project.id]?.length + ' ' + requestWord(toProjectRequests[project.id]!.length)" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="openToProjectRequests = true; selectedProject = project" />
           </div>
 
           <div class="project-info">
@@ -104,7 +104,6 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
           </div>
 
           <div class="project-info">
@@ -162,7 +161,6 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
           </div>
 
           <div class="project-info">
@@ -214,7 +212,6 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
           </div>
 
           <div class="project-info">
@@ -266,7 +263,6 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" label="Заявки" style="height: 20px; border-radius: 10px; min-width: 200px;" />
           </div>
 
           <div class="project-info">
@@ -433,6 +429,85 @@
                     </q-card>
                   </q-dialog>
 
+    <q-dialog maximized v-model="openToProjectRequests" backdrop-filter="blur(4px)" transition-show="slide-up" transition-hide="slide-down" @before-hide="selectedProject = null">
+      <q-card flat bordered class="edit-card beautiful-bg-2">
+        <q-card-section>
+          <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;" class="bg-card">
+          <p class="text-h5" style="color: #41789C; margin: 0;">Заявки на проект "{{ selectedProject?.title }}"</p>
+          <q-btn flat color="primary" rounded icon="close" v-close-popup class="bg-card" @click="clearVariables" />
+        </div>
+        </q-card-section>
+        <q-card-section>
+
+      <q-carousel
+      v-if="selectedProject"
+      v-model="teamSlide"
+      transition-prev="slide-right"
+      transition-next="slide-left"
+      swipeable
+      animated
+      control-color="primary"
+      navigation
+      arrows
+      style="border-radius: 10px; height: 85vh;"
+      >
+      <q-carousel-slide
+      v-for="request in toProjectRequests[selectedProject!.id]"
+      :key="request.id"
+      :name="'request-' + request.id"
+      >
+      <div class="team-title">
+        <p>{{ request.team.title }}</p>
+      </div>
+      <div class="team-info">
+        <div class="description-panel">
+          <p>{{ request.team.description }}</p>
+        </div>
+        <div class="team-info-panel">
+          <p><strong>Тим-лидер:</strong> {{ teamMembers[request.team.teamLeaderId]?.firstname}} {{ teamMembers[request.team.teamLeaderId]?.lastname }}</p>
+          <p><strong>Дата создания:</strong> {{ formatDateToDDMMYYYY(request.team.createdAt) }}</p>
+          <p><strong>Статус:</strong> {{ request.team.currentProjectId ? 'В работе' : 'В поисках' }}</p>
+          <p><strong>Приватность:</strong> {{ teamStatusinterp[request.team.status as keyof typeof teamStatusinterp] }}</p>
+          <p><strong>Кол-во участников:</strong> {{ request.team.members.length + 1 }}</p>
+        </div>
+      </div>
+      <div class="stack-panel">
+        <p style="color: #41789C; align-self: center; margin: 0; font-size: 18px; 
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-weight: 500;
+        ">Стек:</p>
+        <div class="stack-card" v-for="tech in teamStacks[request.teamId]" :key="tech">
+          <p style="margin: 0;">{{ tech }}</p>
+        </div>
+      </div>
+      <div class="team-members-title">
+        <p>Участники</p>
+      </div>
+      <div class="team-members">
+        <div class="member-panel">
+          <img class="user-avatar" :src="avatarUrls[request.team.teamLeaderId] || avatarAlt" />
+          <div class="member-info">
+            <q-badge color="primary">тим-лидер</q-badge>
+          <p>{{ teamMembers[request.team.teamLeaderId]?.firstname }} {{ teamMembers[request.team.teamLeaderId]?.lastname }}</p>
+          <p>{{ teamMembers[request.team.teamLeaderId]?.mail }}</p>
+          </div>
+        </div>
+        <div class="member-panel" v-for="member in request.team.members" :key="member">
+          <img class="user-avatar" :src="avatarUrls[Number(member)] || avatarAlt" />
+          <div class="member-info">
+          <p>{{ teamMembers[Number(member)]?.firstname }} {{ teamMembers[Number(member)]?.lastname }}</p>
+          <p>{{ teamMembers[Number(member)]?.mail }}</p>
+          </div>
+        </div>
+      </div>
+    </q-carousel-slide>
+
+    </q-carousel>
+    </q-card-section>
+  </q-card>
+    </q-dialog>
+    
+
     </div>
 </template>
 
@@ -518,10 +593,108 @@
     border-radius: 10px;
   }
 
+  .team-members {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
   .bg-card {
     background-color: white;
     padding: 5px;
     border-radius: 10px;
+  }
+
+  .team-title {
+    display: flex;
+    justify-content: center;
+
+    p {
+      color: #41789C;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 24px;
+      font-weight: 500;
+      text-align: center;
+    }
+  }
+
+  .user-avatar {
+    width: auto;
+    height: 50px;
+    margin-right: 10px;
+    border-radius: 100%;
+  }
+
+  .description-panel {
+    background-color: #E0EEF8;
+    padding: 10px;
+    min-width: 60vw;
+    border-radius: 10px;
+
+    p {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 15px;
+      color: #41789C;
+      font-weight: 500;
+    }
+  }
+
+  .member-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    p {
+      margin: 5px;
+      color: #41789C;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 16px;
+    }
+  }
+
+  .team-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 10px;
+  }
+
+  .team-members-title {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+
+    p {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 20px;
+      color: #41789C;
+    }
+  }
+
+  .member-panel {
+    display: flex;
+    flex-direction: row;
+    background-color: #E0EEF8;
+    max-width: max-content;
+    padding: 7px;
+    align-items: center;
+    border-radius: 5px;
+  }
+
+  .team-info-panel {
+    background-color: #E0EEF8;
+    padding: 10px;
+    min-width: 20vw;
+    border-radius: 10px;
+
+    p {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 15px;
+      color: #41789C;
+      font-weight: 500;
+    }
   }
 
   .stepper-description {
@@ -629,17 +802,31 @@
   .about-project {
     margin-left: 0;
   }
+
+  .team-info {
+    flex-direction: column-reverse;
+  }
+
+  .team-info-panel {
+    min-width: 80vw;
+  }
+
+  .description-panel {
+    min-width: 80vw;
+  }
 }
 </style>
 
 <script setup lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
-import type { IProjects, IRialto } from 'src/types/types';
-import { computed, onMounted, ref } from 'vue';
+import type { IProjects, IRialto, IToProjectRequest, IUser } from 'src/types/types';
+import { computed, onMounted, ref, watch } from 'vue';
 import { languages, devops, databases, frameworks } from '../types/technologies'
 import { toast } from 'vue3-toastify';
 import { QStepper } from 'quasar';
+import { AuthService } from '../services/auth.service'
+import avatarAlt from '../assets/avatar_alt.png'
 
 
 const tab = ref<string>('published')
@@ -652,8 +839,16 @@ const selectedStack = ref<Record<string, boolean>>({})
 
 const selectedProject = ref<IProjects | null>()
 
+const toProjectRequests = ref<Record<number, IToProjectRequest[]>>({})
+
+const teamMembers = ref<Record<number, IUser>>({})
+
+const openToProjectRequests = ref<boolean>(false)
+
 const myProjects = ref<IProjects[] | null>(null)
 const rialtos = ref<IRialto[]>()
+
+const teamStacks = ref<Record<number, string[]>>({})
 
 const publishedProjects = ref<IProjects[] | null>(null)
 const pendingProjects = ref<IProjects[] | null>(null)
@@ -669,6 +864,8 @@ const projectCustomer = ref<string>('')
 const projectRialto = ref<IRialto | null>()
 const projectMaxPeopleNumber = ref<string>('')
 const projectStack = ref<string[]>([])
+
+const avatarUrls = ref<Record<number, string>>({});
 
 const projectStacks = ref<Record<number, string[]>>({})
 
@@ -721,6 +918,21 @@ const clearStack = () => {
 const recruitmentInterp = {
   'open': 'открыт',
   'close': 'закрыт'
+}
+
+const teamStatusinterp = {
+  'open': 'открыта',
+  'close': 'закрыта'
+}
+
+function formatDateToDDMMYYYY(isoDateString: string): string {
+  const date = new Date(isoDateString);
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  
+  return `${day}.${month}.${year}`;
 }
 
 const isCurrentStepValid = computed(() => {
@@ -827,6 +1039,18 @@ id?: number) => {
     }
 }
 
+const requestWord = (count: number) => {
+  if (count  % 10 === 1 && Math.floor(count / 10) % 10 !== 1) {
+    return 'заявка'
+  }
+  else if (count % 10 > 1 && count % 10 < 5 && Math.floor(count / 10) % 10 !== 1) {
+    return 'заявки'
+  }
+  else {
+    return 'заявок'
+  }
+}
+
 const deleteProject = async (projectId: number) => {
   try {
     await instance.delete(`project/${projectId}/delete`)
@@ -844,12 +1068,32 @@ const deleteProject = async (projectId: number) => {
     }
 }
 
+const teamSlide = ref('');
+
+watch(openToProjectRequests, (isOpen) => {
+  if (isOpen && selectedProject.value && toProjectRequests.value[selectedProject.value.id]?.length) {
+    teamSlide.value = 'request-' + toProjectRequests.value[selectedProject.value.id]![0]!.id;
+  }
+});
+
+const getAvatarUrl = async (userId: number): Promise<string | null> => {
+  try {
+    const avatarBlob = await AuthService.getAvatar(userId);
+    if (!avatarBlob || avatarBlob?.size === 0) return null; // Явно возвращаем null при отсутствии аватара
+    return URL.createObjectURL(avatarBlob);
+  } catch (error) {
+    console.error('Ошибка загрузки аватара:', error);
+    return null;
+  }
+};
+
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data
     rialtos.value = (await instance.get('rialto')).data
 
     myProjects.value?.forEach(project => {
       projectStacks.value[project.id] = project.stack.replace('{', '').replace('}', '').split(',')
+      toProjectRequests.value[project.id] = []
     })
 
     publishedProjects.value = myProjects.value?.filter(project => project.status === 'published') || null
@@ -857,6 +1101,53 @@ onMounted(async () => {
     inProgressProjects.value = myProjects.value?.filter(project => project.status === 'in_progress') || null
     completeProjects.value = myProjects.value?.filter(project => project.status === 'complete') || null
     revisionProjects.value = myProjects.value?.filter(project => project.status === 'revision') || null
+
+    if (publishedProjects.value?.length) {
+      await Promise.all(
+        publishedProjects.value.map(async (project) => {
+          try {
+            const requests = (await instance.get(`project-request/project/${project.id}`)).data;
+            if (requests?.length) {
+              toProjectRequests.value[project.id] = requests;
+            }
+          } catch (error) {
+            console.error(`Ошибка при загрузке заявок для проекта ${project.id}:`, error);
+          }
+        })
+      );
+    }
+
+    if (publishedProjects.value) {
+  await Promise.all(
+    publishedProjects.value.map(async (project) => {
+      const requests = toProjectRequests.value[project.id];
+      if (requests?.length) {
+        await Promise.all(
+          requests.map(async (request) => {
+            try {
+              const response = await instance.get(`teams/stack/${request.teamId}`);
+              teamStacks.value[request.teamId] = response.data;
+              teamMembers.value[request.team.teamLeaderId] = (await instance.get(`user/${request.team.teamLeaderId}`)).data
+              const leaderAvatarUrl = await getAvatarUrl(request.team.teamLeaderId);
+              avatarUrls.value[request.team.teamLeaderId] = leaderAvatarUrl ?? avatarAlt;
+
+              await Promise.all(
+                request.team.members.map(async member => {
+                  teamMembers.value[Number(member)] = (await instance.get(`user/${member}`)).data
+                  const memberAvatarUrl = await getAvatarUrl(Number(member));
+                  avatarUrls.value[Number(member)] = memberAvatarUrl ?? avatarAlt;
+                })
+              )
+            } catch (error) {
+              console.error(`Ошибка при загрузке стека команды ${request.teamId}:`, error);
+            }
+          })
+        );
+      }
+    })
+  );
+}
+
 
     clearStack()
 })
