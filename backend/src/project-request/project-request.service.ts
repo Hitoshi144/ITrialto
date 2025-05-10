@@ -120,6 +120,7 @@ export class ProjectRequestService {
     // Назначаем команду на проект
     request.project.teamId = request.teamId;
     request.project.status = 'in_progress';
+    request.project.recruitment = 'close'
     request.team.currentProjectId = request.projectId;
     
     await this.projectRepository.save(request.project);
@@ -156,7 +157,7 @@ export class ProjectRequestService {
 
   async getProjectRequests(projectId: number) {
     return await this.projectRequestRepository.find({ 
-      where: { projectId },
+      where: { projectId, status: 'pending' },
       relations: ['team'],
       order: { createdAt: 'DESC' }
     });

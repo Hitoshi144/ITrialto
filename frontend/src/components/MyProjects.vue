@@ -49,7 +49,7 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" :label="toProjectRequests[project.id]?.length + ' ' + requestWord(toProjectRequests[project.id]!.length)" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="openToProjectRequests = true; selectedProject = project" />
+            <q-btn outline color="primary" :label="toProjectRequests[project.id]?.length + ' ' + requestWord(toProjectRequests[project.id]!.length)" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="openToProjectRequests = true; selectedProject = project" :disable="toProjectRequests[project.id]?.length === 0 ? true : false" />
           </div>
 
           <div class="project-info">
@@ -198,6 +198,8 @@
               <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
             </div>
           </div>
+
+          <p class="working-team">Назначен команде: <strong>{{ in_progressTeams.find(team => team.id === project.teamId)?.title }}</strong></p>
 
         </div>
     </q-tab-panel>
@@ -459,6 +461,7 @@
       <div class="team-title">
         <p>{{ request.team.title }}</p>
       </div>
+      <div class="request-container">
       <div class="team-info">
         <div class="description-panel">
           <p>{{ request.team.description }}</p>
@@ -500,6 +503,11 @@
           </div>
         </div>
       </div>
+      <div class="requests-controls">
+          <q-btn filled color="primary" style="border-radius: 10px;" label="Назначить на проект" @click="approveRequest(selectedProject.id, request.id)" />
+          <q-btn outline color="primary" style="border-radius: 10px;" label="Отказать" @click="rejectRequest(selectedProject.id, request.id)" />
+        </div>
+        </div>
     </q-carousel-slide>
 
     </q-carousel>
@@ -550,6 +558,12 @@
     font-weight: 600;
     margin: 0;
     color: #41789C;
+}
+
+.request-container {
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 100px;
 }
 
 .tab-container {
@@ -604,6 +618,13 @@
     background-color: white;
     padding: 5px;
     border-radius: 10px;
+  }
+
+  .requests-controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 50px;
   }
 
   .team-title {
@@ -731,6 +752,16 @@
     color: #41789C;
 }
 
+.working-team {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #41789C;
+  font-size: 18px;
+  margin: 0;
+  border: 1px solid #41789C;
+  border-radius: 10px;
+  padding: 5px  ;
+}
+
 .project-info {
   display: flex;
   flex-direction: row;
@@ -820,7 +851,7 @@
 <script setup lang="ts">
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
-import type { IProjects, IRialto, IToProjectRequest, IUser } from 'src/types/types';
+import type { IProjects, IRialto, ITeam, IToProjectRequest, IUser } from 'src/types/types';
 import { computed, onMounted, ref, watch } from 'vue';
 import { languages, devops, databases, frameworks } from '../types/technologies'
 import { toast } from 'vue3-toastify';
@@ -839,7 +870,7 @@ const selectedStack = ref<Record<string, boolean>>({})
 
 const selectedProject = ref<IProjects | null>()
 
-const toProjectRequests = ref<Record<number, IToProjectRequest[]>>({})
+const toProjectRequests = ref<Record<number, IToProjectRequest[] | null>>({})
 
 const teamMembers = ref<Record<number, IUser>>({})
 
@@ -849,6 +880,8 @@ const myProjects = ref<IProjects[] | null>(null)
 const rialtos = ref<IRialto[]>()
 
 const teamStacks = ref<Record<number, string[]>>({})
+
+const in_progressTeams = ref<ITeam[]>([])
 
 const publishedProjects = ref<IProjects[] | null>(null)
 const pendingProjects = ref<IProjects[] | null>(null)
@@ -1087,6 +1120,53 @@ const getAvatarUrl = async (userId: number): Promise<string | null> => {
   }
 };
 
+const rejectRequest = async (projectId: number, requestId: number) => {
+  try {
+    await instance.patch(`project-request/${requestId}/reject`)
+    toProjectRequests.value[projectId] = toProjectRequests.value[projectId]!.filter(request => request.id !== requestId)
+
+    if (toProjectRequests.value[projectId].length === 0) {
+      openToProjectRequests.value = false
+    }
+    else {
+      teamSlide.value = 'request-' + toProjectRequests.value[selectedProject.value!.id]![0]!.id;
+    }
+
+    toast.success('Заявка отклонена')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
+const approveRequest = async (projectId: number, requestId: number) => {
+  try {
+    await instance.patch(`project-request/${requestId}/approve`)
+    toProjectRequests.value[projectId] = null
+
+    if (publishedProjects.value) {
+      const project = publishedProjects.value.find(p => p.id === projectId);
+      if (project && inProgressProjects.value) {
+        // Проверяем, нет ли уже этого проекта в списке
+        if (!inProgressProjects.value.some(p => p.id === projectId)) {
+          inProgressProjects.value.push(project);
+          // Удаляем проект из опубликованных
+          publishedProjects.value = publishedProjects.value.filter(p => p.id !== projectId);
+        }
+      }
+    }
+
+    openToProjectRequests.value = false
+
+    toast.success('Команда назначена на проект')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data
     rialtos.value = (await instance.get('rialto')).data
@@ -1146,6 +1226,16 @@ onMounted(async () => {
       }
     })
   );
+
+  await Promise.all(
+    inProgressProjects.value!.map(async (project) => {
+      try {
+        in_progressTeams.value.push(((await instance.get(`teams/${project.teamId}`)).data))
+      }
+      catch (error) {
+      console.error(`Ошибка при загрузке команды ${project.teamId}:`, error);
+    }})
+  )
 }
 
 
