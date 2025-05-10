@@ -311,7 +311,7 @@ import logoutImg from '../assets/logout.png'; // Добавьте этот им�
   const router = useRouter()
   const route = useRoute()
 
-  const isHeaderRoute = computed( () => route.name === 'projects-exchange' || route.name === 'teams-registry')
+  const isHeaderRoute = computed( () => route.name === 'projects' || route.name === 'teams-registry')
   
   const getImageUrl = (name: string) => {
   return new URL(`../assets/${name}`, import.meta.url).href;

@@ -133,9 +133,17 @@
           <q-select filled clearable v-model="selectedTeam" :options="userTeams" option-label="title" :rules="[val => !!val || '']" />
         </div>
         </transition>
-        <q-btn v-if="selectedProject.status === 'published'" :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" label="Подать заявку" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="teamSelecting === true && selectedTeam === null" />
+        <q-btn v-if="selectedProject.status === 'published'" :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" :label="(selectedTeam && myTeamsRequests.some(req => 
+      req.projectId === selectedProject!.id && 
+      req.teamId === selectedTeam!.id
+    )) ? 'заявка подана' : 'Подать заявку'" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="Boolean(
+    (teamSelecting && !selectedTeam) || 
+    (selectedTeam && myTeamsRequests.some(req => 
+      req.projectId === selectedProject!.id && 
+      req.teamId === selectedTeam!.id
+    )))" />
         <transition name="fade" mode="out-in">
-        <q-btn filled label="отмена" color="primary" class="send-request" @click="teamSelecting = false" v-if="teamSelecting" />
+        <q-btn filled label="отмена" color="primary" class="send-request" @click="teamSelecting = false; selectedTeam = null" v-if="teamSelecting" />
         </transition>
 
         </div>
@@ -462,7 +470,7 @@
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
-import type { IProjects, IRialto, ITeam, IUser } from 'src/types/types';
+import type { IProjects, IRialto, ITeam, IToProjectRequest, IUser } from 'src/types/types';
 import { computed, onMounted, ref } from 'vue';
 import { toast } from 'vue3-toastify';
 
@@ -472,6 +480,8 @@ import { toast } from 'vue3-toastify';
 
 
  const currentRialtoId = ref<number>(2)
+
+ const myTeamsRequests = ref<IToProjectRequest[]>([])
 
  const selectedTeam = ref<ITeam | null>(null)
 
@@ -588,6 +598,15 @@ console.log(formatDateToRussianShort(isoDate));
   }
  }
 
+ const loadTeamRequests = async (teamId: number) => {
+  try {
+    myTeamsRequests.value.push(...(await instance.get(`project-request/my-team/${teamId}`)).data)
+  }
+  catch (error: any) {
+    toast.error(error.message)
+  }
+ }
+
  const sendRequest = async (projectId: number, teamId: number) => {
   try {
     await instance.post('project-request', {projectId, teamId})
@@ -609,9 +628,17 @@ console.log(formatDateToRussianShort(isoDate));
       instance.get<ITeam[]>('teams')
     ]);
     
-    projects.value = projectsResponse.data;
+    projects.value = projectsResponse.data.filter(project => project.status !== 'rejected');
     rialtos.value = rialtosResponse.data;
     userTeams.value = teamsResponse.data
+
+    await Promise.all(
+      userTeams.value.map(async team => {
+        await loadTeamRequests(team.id)
+      })
+    )
+
+    console.log(myTeamsRequests.value)
 
     projects.value.forEach(project => {
       loadInitiatorData(project.id, project.userId).catch(error => console.error(error))

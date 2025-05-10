@@ -23,6 +23,9 @@
           <q-tab name="complete" icon="verified" label="Выполненные" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
             <q-badge :label="completeProjects?.length" />
           </q-tab>
+          <q-tab name="rejected" icon="do_not_disturb_on" label="Отклоненные" style="border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
+            <q-badge :label="rejectedProjects?.length" />
+          </q-tab>
           <q-tab name="revision" icon="report" label="На доработке" style="border-radius: 0 0 0 20px; border: 1px solid rgba(65, 120, 156, 0.5); border-top: 0px;">
             <q-badge :label="revisionProjects?.length" />
           </q-tab>
@@ -49,7 +52,7 @@
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
-            <q-btn outline color="primary" :label="toProjectRequests[project.id]?.length + ' ' + requestWord(toProjectRequests[project.id]!.length)" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="openToProjectRequests = true; selectedProject = project" :disable="toProjectRequests[project.id]?.length === 0 ? true : false" />
+            <q-btn outline color="primary" :label="(toProjectRequests[project.id]?.length === undefined ? '0' : toProjectRequests[project.id]?.length) + ' ' + requestWord(toProjectRequests[project.id]?.length)" style="height: 20px; border-radius: 10px; min-width: 200px;" @click="openToProjectRequests = true; selectedProject = project" :disable="toProjectRequests[project.id]?.length === 0 || toProjectRequests[project.id]?.length === undefined ? true : false" />
           </div>
 
           <div class="project-info">
@@ -73,6 +76,7 @@
               <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
               <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
               <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+              <q-btn filled unelevated color="primary" :label="project.recruitment === 'open' ? 'закрыть' : 'открыть'" size="xs" style="border-radius: 10px; max-width: 200px; font-size: 10px;" @click="changeRecruitment(project)" />
             </div>
           </div>
 
@@ -201,6 +205,31 @@
 
           <p class="working-team">Назначен команде: <strong>{{ in_progressTeams.find(team => team.id === project.teamId)?.title }}</strong></p>
 
+          <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+            <q-btn outline color="primary" label="Завершить" style="border-radius: 10px;" @click="completingProject = true" />
+            <q-btn filled color="primary" label="Снять команду с проекта" style="border-radius: 10px;" @click="resignTeamFromProject(project)" />
+          </div>
+
+          <q-dialog v-model="completingProject" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade" @before-hide="completingProject = false">
+                    <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+                      <q-card-section>
+                        <div style="display: flex; justify-content: space-between; flex-direction: row;">
+                          <p class="text-h5" style="color: #41789C;">Завершение проекта</p>
+                        <q-btn flat color="primary" rounded icon="close" v-close-popup />
+                        </div>
+                      </q-card-section>
+                      <q-card-section>
+                        <p class="text-h6" style="color: #41789C; margin-left: 30px;">Вы уверены, что хотите <span style="color: #eb6449;">завершить</span> проект "{{ project.title }}"? <u>(Данное действие необратимо!)</u></p>
+                      </q-card-section>
+                      <q-card-section>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+                          <q-btn outline color="negative" style="border-radius: 10px; margin-left: 20px;" label="Завершить" @click="completeProject(project)" />
+                          <q-btn filled color="primary" style="border-radius: 10px; margin-right: 20px;" label="Отмена" @click="completingProject = false" />
+                        </div>
+                      </q-card-section>
+                    </q-card>
+                  </q-dialog>
+
         </div>
     </q-tab-panel>
 
@@ -211,6 +240,57 @@
         </div>
 
         <div v-for="project in completeProjects" :key="project.id">
+          <q-separator />
+          <div class="projects-header" style="align-items: center;">
+            <p class="project-title">{{ project.title }}</p>
+          </div>
+
+          <div class="project-info">
+            <div style="display: flex; flex-direction: column;">
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Проблема:</strong></p>
+              <p class="project-description">{{ project.problem }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Решение:</strong></p>
+              <p class="project-description">{{ project.solution }}</p>
+            </div>
+            <div class="project-title-panel" style="flex-direction: column; width: 100%;">
+              <p class="project-description"><strong>Ожидаемый результат:</strong></p>
+              <p class="project-description">{{ project.expectedResult }}</p>
+            </div>
+            </div>
+
+            <div class="project-title-panel about-project" style="flex-direction: column;">
+              <p class="project-description"><strong>Заказчик:</strong> {{ project.customer }}</p>
+              <p class="project-description"><strong>Биржа:</strong> {{ rialtos?.find(rialto => rialto.id === project.rialtoId)?.title }}</p>
+              <p class="project-description"><strong>Макс. кол-во человек в команде:</strong> {{ project.maxPeopleNumber }}</p>
+              <p class="project-description"><strong>Набор:</strong> {{ recruitmentInterp[project.recruitment as keyof typeof recruitmentInterp] }}</p>
+            </div>
+          </div>
+
+          <div class="project-title-panel" style="max-width: 100%;">
+            <div v-if="projectStacks[project.id]!.length > 0" class="stack-panel">
+              <p class="project-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
+              <div class="stack-card" v-for="tech in projectStacks[project.id]" :key="tech">
+                <p style="margin: 0;">{{ tech }}</p>
+              </div>
+            </div>
+            <div v-else>
+              <p class="project-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
+            </div>
+          </div>
+
+        </div>
+    </q-tab-panel>
+
+    <q-tab-panel name="rejected">
+        <div class="projects-header">
+        <p class="projects-lenght">Отклоненных проектов: {{ rejectedProjects?.length }}</p>
+        <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
+        </div>
+
+        <div v-for="project in rejectedProjects" :key="project.id">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -888,6 +968,7 @@ const pendingProjects = ref<IProjects[] | null>(null)
 const inProgressProjects = ref<IProjects[] | null>(null)
 const completeProjects = ref<IProjects[] | null>(null)
 const revisionProjects = ref<IProjects[] | null>(null)
+const rejectedProjects = ref<IProjects[] | null>(null)
 
 const projectTitle = ref<string>('')
 const projectProblem = ref<string>('')
@@ -899,6 +980,8 @@ const projectMaxPeopleNumber = ref<string>('')
 const projectStack = ref<string[]>([])
 
 const avatarUrls = ref<Record<number, string>>({});
+
+const completingProject = ref<boolean>(false)
 
 const projectStacks = ref<Record<number, string[]>>({})
 
@@ -1072,8 +1155,11 @@ id?: number) => {
     }
 }
 
-const requestWord = (count: number) => {
-  if (count  % 10 === 1 && Math.floor(count / 10) % 10 !== 1) {
+const requestWord = (count: number | undefined) => {
+  if (count === undefined) {
+    return 'заявок'
+  }
+  else if (count  % 10 === 1 && Math.floor(count / 10) % 10 !== 1) {
     return 'заявка'
   }
   else if (count % 10 > 1 && count % 10 < 5 && Math.floor(count / 10) % 10 !== 1) {
@@ -1142,11 +1228,14 @@ const rejectRequest = async (projectId: number, requestId: number) => {
 
 const approveRequest = async (projectId: number, requestId: number) => {
   try {
-    await instance.patch(`project-request/${requestId}/approve`)
+    const response = (await instance.patch(`project-request/${requestId}/approve`)).data
+    const project = response.project
+    in_progressTeams.value.push(response.team)
     toProjectRequests.value[projectId] = null
+    console.log(project)
+    console.log(projectStacks.value[project.id])
 
     if (publishedProjects.value) {
-      const project = publishedProjects.value.find(p => p.id === projectId);
       if (project && inProgressProjects.value) {
         // Проверяем, нет ли уже этого проекта в списке
         if (!inProgressProjects.value.some(p => p.id === projectId)) {
@@ -1167,6 +1256,56 @@ const approveRequest = async (projectId: number, requestId: number) => {
   }
 }
 
+const changeRecruitment = async (project: IProjects) => {
+  try {
+    if (project.recruitment === 'open') {
+      project.recruitment = (await instance.patch(`project/${project.id}/close`)).data.recruitment
+      toast.success('Набор закрыт')
+    }
+
+    else if (project.recruitment === 'close') {
+      project.recruitment = (await instance.patch(`project/${project.id}/open`)).data.recruitment
+      toast.success('Набор открыт')
+    }
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
+const completeProject = async (project: IProjects) => {
+  try {
+    const completedProject = (await instance.patch(`project/${project.id}/complete`)).data
+
+    inProgressProjects.value = inProgressProjects.value!.filter(pr => pr.id !== project.id)
+
+    completeProjects.value?.push(completedProject)
+
+    toast.success('Проект завершен')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
+const resignTeamFromProject = async (project: IProjects) => {
+  try {
+    const resignedProject = (await instance.patch(`project/${project.id}/resign-team`)).data
+
+    inProgressProjects.value = inProgressProjects.value!.filter(pr => pr.id !== project.id)
+
+    publishedProjects.value?.push(resignedProject)
+
+    toast.success('Команда снята с проекта')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data
     rialtos.value = (await instance.get('rialto')).data
@@ -1179,8 +1318,9 @@ onMounted(async () => {
     publishedProjects.value = myProjects.value?.filter(project => project.status === 'published') || null
     pendingProjects.value = myProjects.value?.filter(project => project.status === 'pending') || null
     inProgressProjects.value = myProjects.value?.filter(project => project.status === 'in_progress') || null
-    completeProjects.value = myProjects.value?.filter(project => project.status === 'complete') || null
+    completeProjects.value = myProjects.value?.filter(project => project.status === 'completed') || null
     revisionProjects.value = myProjects.value?.filter(project => project.status === 'revision') || null
+    rejectedProjects.value = myProjects.value?.filter(project => project.status === 'rejected') || null
 
     if (publishedProjects.value?.length) {
       await Promise.all(

@@ -90,6 +90,35 @@ export class ProjectService {
     return await this.projectRepository.save(project);
   }
 
+  async resignTeamToProject(projectId: number) {
+    const project = await this.projectRepository.findOne({where: {id: projectId}})
+    let team
+
+    if (!project) {
+      throw new BadRequestException('Проект не найден')
+    }
+    
+    if (project.teamId) {
+      team = await this.teamRepository.findOne({where: {id: project.teamId}})
+    }
+    else {
+      throw new BadRequestException('Нет команды, работающей над проектом')
+    }
+
+    if (!team) {
+      throw new BadRequestException('Команда не найдена')
+    }
+
+    team.currentProjectId = null;
+    await this.teamRepository.save(team);
+
+    project.teamId = null
+    project.status = 'published'
+    project.recruitment = 'open'
+
+    return await  this.projectRepository.save(project)
+  }
+
   async getUserProjects(userId: number) {
     return await this.projectRepository.find({ 
       where: { userId },
@@ -191,6 +220,50 @@ export class ProjectService {
       await this.projectRepository.delete(projectId);
     } catch (error) {
       throw new BadRequestException('Не удалось удалить проект');
+    }
+  }
+
+  async openRecruitment(id: number) {
+    try {
+      const project = await this.projectRepository.findOne({where: {id}})
+
+      if (!project) {
+        throw new BadRequestException('Проект не найден')
+      }
+
+      if (project.recruitment === 'open') {
+        throw new BadRequestException('Набор уже открыт')
+      }
+
+      project.recruitment = 'open'
+
+      return await this.projectRepository.save(project)
+
+    }
+    catch (error) {
+      throw new BadRequestException('Не удалось открыть набор')
+    }
+  }
+
+  async closeRecruitment(id: number) {
+    try {
+      const project = await this.projectRepository.findOne({where: {id}})
+
+      if (!project) {
+        throw new BadRequestException('Проект не найден')
+      }
+
+      if (project.recruitment === 'close') {
+        throw new BadRequestException('Набор уже закрыт')
+      }
+
+      project.recruitment = 'close'
+
+      return await this.projectRepository.save(project)
+
+    }
+    catch (error) {
+      throw new BadRequestException('Не удалось открыть набор')
     }
   }
 }

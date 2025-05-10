@@ -110,6 +110,17 @@ export class ProjectController {
     }
   }
 
+  @Patch(':id/resign-team')
+  @UseGuards(JwtAuthGuard)
+  async resignTeam(@Param('id') id: number) {
+    try {
+      return await this.projectService.resignTeamToProject(id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
   @Patch(':id/complete')
   @UseGuards(JwtAuthGuard)
   async completeProject(@Param('id') id: string) {
@@ -148,6 +159,28 @@ export class ProjectController {
   async deleteProject(@Param('id') id: number){
     try {
       return await this.projectService.deleteProject(id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
+  @Patch(':id/open')
+  @UseGuards(JwtAuthGuard)
+  async openRecruitment(@Param('id') id: number) {
+    try {
+      return await this.projectService.openRecruitment(id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
+  @Patch(':id/close')
+  @UseGuards(JwtAuthGuard)
+  async closeRecruitment(@Param('id') id: number) {
+    try {
+      return await this.projectService.closeRecruitment(id)
     }
     catch (error) {
       throw new BadRequestException(error.message)

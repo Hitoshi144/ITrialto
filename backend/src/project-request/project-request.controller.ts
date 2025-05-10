@@ -26,14 +26,11 @@ export class ProjectRequestController {
     }
   }
 
-  @Get('my-team')
+  @Get('my-team/:id')
   @UseGuards(JwtAuthGuard)
-  async getMyTeamRequests(@Request() req) {
+  async getMyTeamRequests(@Param('id') id: number) {
     try {
-      if (!req.user.teamId) {
-        throw new BadRequestException('Вы не состоите в команде');
-      }
-      return await this.projectRequestService.getTeamRequests(req.user.teamId);
+      return await this.projectRequestService.getTeamRequests(id);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
