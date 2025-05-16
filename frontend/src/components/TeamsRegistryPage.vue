@@ -29,6 +29,20 @@
           </div>
           <q-checkbox v-model="inWork" label="В работе" class="filters-part" />
           <q-separator />
+          <p class="filters-part" style="text-align: center;"><strong>Стек</strong></p>
+          <div style="width: 90%; display: flex; justify-content: center; margin: 0; justify-self: center;">
+          <q-btn 
+            :filled="filteredStackCount() === 0 ? true : false" 
+            :outline="filteredStackCount() === 0 ? false : true"
+            dense 
+            color="primary" 
+            :label="filteredStackCount() === 0 ? 'Выбрать стек' : filteredStackCount() + ' ' + parametrWord(filteredStackCount())" 
+            class="stack-btn"
+            @click="chooseStack = true"
+            style="border-radius: 10px;"
+          />
+          </div>
+          <q-separator />
           <div style="width: 90%; display: flex; justify-content: center; margin: 0; justify-self: center;">
           <q-btn 
             outline 
@@ -184,6 +198,47 @@
     </q-table>
       </div>
     </div>
+
+    <q-dialog v-model="chooseStack" maximized backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+      <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+        <q-card-section>
+          <div style="display: flex; justify-content: space-between; flex-direction: row;">
+            <p class="text-h5" style="color: #41789C;">Выберите стек</p>
+            <q-btn flat color="primary" rounded icon="close" v-close-popup />
+          </div>
+
+          <div class="stack-container">
+              <div class="technologies">
+                  <div class="stack-list">
+                <p class="stack-category">ЯП</p>
+                <div v-for="lang in languages" :key="lang">
+                  <q-checkbox v-model="selectedStack[lang]" :label="lang" />
+                </div>
+                </div>
+                <div class="stack-list">
+                <p class="stack-category">Фреймворки</p>
+                <div v-for="framework in frameworks" :key="framework">
+                  <q-checkbox v-model="selectedStack[framework]" :label="framework" />
+                </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">Базы данных</p>
+                  <div v-for="database in databases" :key="database">
+                    <q-checkbox v-model="selectedStack[database]" :label="database" />
+                  </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">DevOps</p>
+                  <div v-for="devop in devops" :key="devop">
+                    <q-checkbox v-model="selectedStack[devop]" :label="devop" />
+                  </div>
+                </div>
+              </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
   </div>
   </div>
 </template>
@@ -194,6 +249,7 @@
   import type { ITeam, ITeamRequests, IUser } from '../types/types';
 import { useUserStore } from 'src/store';
 import { toast } from 'vue3-toastify';
+import { languages, devops, databases, frameworks } from '../types/technologies'
 
   const teams = ref<ITeam[] | null>(null);
   const loading = ref(true);
@@ -214,6 +270,10 @@ import { toast } from 'vue3-toastify';
   const inWork = ref<boolean>(false)
 
   const searchRequest = ref<string>('')
+
+ const chooseStack = ref<boolean>(false)
+const selectedStack = ref<Record<string, boolean>>({})
+
 
   const teamStacks = ref<Record<number, string[]>>({})
 
@@ -251,6 +311,38 @@ const fetchAvatar = async (userId: number): Promise<void> => {
     avatarUrls.value[userId] = defaultAvatar.value;
   }
 };
+
+const parametrWord = (count: number) => {
+  if (count > 9) {
+    if (count % 10 === 1 && Math.floor(count / 10) % 10 !== 1) {
+      return 'параметр'
+    }
+    else if (count % 10 >= 2 && count % 10 <= 4 && Math.floor(count / 10) % 10 !== 1) {
+      return 'параметра'
+    }
+    else {
+      return 'параметров'
+    }
+  }
+  else {
+    if (count % 10 === 1) {
+      return 'параметр'
+    }
+    else if (count % 10 >= 2 && count % 10 <= 4) {
+      return 'параметра'
+    }
+    else {
+      return 'параметров'
+    }
+  }
+}
+
+const clearStack = () => {
+    languages.forEach(lang => selectedStack.value[lang] = false)
+    frameworks.forEach(framework => selectedStack.value[framework] = false)
+    databases.forEach(db => selectedStack.value[db] = false)
+    devops.forEach(devop => selectedStack.value[devop] = false)
+}
 
 const fetchUserData = async (userId: number): Promise<void> => {
   if (!memberNames.value[userId] && !userEmails.value[userId] && !leaderNames.value[userId]) {
@@ -336,6 +428,8 @@ const pagination = ref({
       (!isOpen.value && !isClose.value) || // если ничего не выбрано - пропускаем все
       (isOpen.value && team.status === 'open') || 
       (isClose.value && team.status === 'close');
+
+    const matchedStack = filteredStackCount() === 0 || stackFilter(team.id)
     
     // Фильтрация по статусу
     const matchesStatus = 
@@ -343,7 +437,7 @@ const pagination = ref({
       (inSearch.value && !team.currentProjectId) || 
       (inWork.value && team.currentProjectId);
     
-    return matchesSearch && matchesPrivacy && matchesStatus;
+    return matchesSearch && matchesPrivacy && matchesStatus && matchedStack;
   });
 });
 
@@ -353,6 +447,8 @@ const resetFilters = () => {
   inSearch.value = false;
   inWork.value = false;
   searchRequest.value = '';
+
+  clearStack()
 };
 
 const sendRequestToTeam = async (teamId: number) => {
@@ -380,11 +476,73 @@ const sendRequestToTeam = async (teamId: number) => {
     return []; // Возвращаем пустой массив в случае ошибки
   }
   } 
+
+  const filteredStackCount = () => {
+  let count = 0
+
+  languages.forEach(lang => {
+    if (selectedStack.value[lang] === true) {
+      count += 1
+    }
+  })
+
+  databases.forEach(db => {
+    if (selectedStack.value[db] === true) {
+      count += 1
+    }
+  })
+
+  devops.forEach(devop => {
+    if (selectedStack.value[devop] === true) {
+      count += 1
+    }
+  })
+
+  frameworks.forEach(framework => {
+    if (selectedStack.value[framework] === true) {
+      count += 1
+    }
+  })
+  
+  return count
+ }
+
+ const stackFilter = (teamId: number) => {
+  let flag = true
+  
+  languages.forEach(lang => {
+    if (selectedStack.value[lang] === true && teamStacks.value[teamId]?.includes(lang) === false) {
+      flag = false
+    }
+  })
+
+  databases.forEach(db => {
+    if (selectedStack.value[db] === true && teamStacks.value[teamId]?.includes(db) === false) {
+      flag = false
+    }
+  })
+
+  frameworks.forEach(framework => {
+    if (selectedStack.value[framework] === true && teamStacks.value[teamId]?.includes(framework) === false) {
+      flag = false
+    }
+  })
+
+  devops.forEach(devop => {
+    if (selectedStack.value[devop] === true && teamStacks.value[teamId]?.includes(devop) === false) {
+      flag = false
+    }
+  })
+
+  return flag
+ }
   
   onMounted(async () => {
   try {
     const response = await instance.get<ITeam[]>('/teams/all');
     teams.value = response.data;
+
+    clearStack()
 
     myPendingRequests.value = (await instance.get<ITeamRequests[]>(`team-request/${user?.id}`)).data
 
@@ -560,6 +718,41 @@ html, body {
     color: rgb(22, 47, 65);
     font-size: 18px;
     font-weight: 500;
+  }
+
+  .stack-btn {
+  margin: 0px auto 20px auto !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  padding: 0 16px; /* или любые другие значения по вашему вкусу */
+  width: 100%;
+}
+
+  .stack-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.stack-category {
+  text-align: center;
+  color: #41789C;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+}
+
+
+.technologies {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    gap: 50px;
+  }
+
+  .stack-container {
+    display: flex;
+    justify-self: center;
+    max-width: 1200px;
   }
 
   .description, .filters-part {

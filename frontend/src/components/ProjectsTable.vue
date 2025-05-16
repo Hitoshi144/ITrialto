@@ -1,5 +1,8 @@
 <template>
     <div class="container">
+
+      
+
     <div class="current-rialto beautiful-bg" @click="changeRialto = true">
       <q-badge color="primary" text-color="secondary" class="rialto-announcement">
         текущая биржа
@@ -25,6 +28,69 @@
 
       </q-card>
     </q-dialog>
+
+    <q-input rounded outlined bg-color="grey-1" placeholder="Поиск" v-model="searchRequest" class="search-input">
+      <template v-slot:append>
+          <q-icon name="close" @click="searchRequest = ''" class="cursor-pointer" />
+        </template>
+        </q-input>
+
+    <div class="content-wrapper">
+    <div class="filters-container">
+        <div class="filters">
+          <p class="filters-title" style="text-align: center;">Фильтры</p>
+
+          <q-separator />
+          
+          <p class="filters-part" style="text-align: center;"><strong>Статус</strong></p>
+          <div>
+          <q-checkbox v-model="publishedFilter" label="Опубликованные" class="filters-part" />
+          </div>
+          <q-checkbox v-model="completedFilter" label="Выполненные" class="filters-part" />
+          <q-checkbox v-model="pendingFilter" label="На рассмотрении" class="filters-part" />
+          <q-checkbox v-model="in_progressFilter" label="В работе" class="filters-part" />
+          <q-checkbox v-model="revisionFilter" label="На доработке" class="filters-part" />
+
+
+          <q-separator />
+
+          <p class="filters-part" style="text-align: center;"><strong>Набор</strong></p>
+          <div>
+          <q-checkbox v-model="recruitmentOpenFilter" label="Открыт" class="filters-part" />
+          </div>
+          <q-checkbox v-model="recruitmentCloseFilter" label="Закрыт" class="filters-part" />
+
+          <q-separator />
+
+          <p class="filters-part" style="text-align: center;"><strong>Стек</strong></p>
+          <div style="width: 90%; display: flex; justify-content: center; margin: 0; justify-self: center;">
+          <q-btn 
+            :filled="filteredStackCount() === 0 ? true : false" 
+            :outline="filteredStackCount() === 0 ? false : true"
+            dense 
+            color="primary" 
+            :label="filteredStackCount() === 0 ? 'Выбрать стек' : filteredStackCount() + ' ' + parametrWord(filteredStackCount())" 
+            class="stack-btn"
+            @click="chooseStack = true"
+            style="border-radius: 10px;"
+          />
+          </div>
+
+          <q-separator />
+
+          <div style="width: 90%; display: flex; justify-content: center; margin: 0; justify-self: center;">
+          <q-btn 
+            outline 
+            dense 
+            color="primary" 
+            label="Сбросить" 
+            @click="resetFilters()"
+            class="reset-btn"
+            style="border-radius: 10px;"
+          />
+          </div>
+        </div>
+      </div>
     
     <div class="projects">
       <q-intersection once v-for="project in filteredProjects" :key="project.id" transition="scale">
@@ -68,6 +134,7 @@
         </q-card>
 
       </q-intersection>
+    </div>
     </div>
 
     <div class="project-panel" :class="{ 'panel-open': isProjectPanelOpen }">
@@ -150,6 +217,46 @@
         </transition>
       </div>
     </div>
+
+    <q-dialog v-model="chooseStack" maximized backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+      <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
+        <q-card-section>
+          <div style="display: flex; justify-content: space-between; flex-direction: row;">
+            <p class="text-h5" style="color: #41789C;">Выберите стек</p>
+            <q-btn flat color="primary" rounded icon="close" v-close-popup />
+          </div>
+
+          <div class="stack-container">
+              <div class="technologies">
+                  <div class="stack-list">
+                <p class="stack-category">ЯП</p>
+                <div v-for="lang in languages" :key="lang">
+                  <q-checkbox v-model="selectedStack[lang]" :label="lang" />
+                </div>
+                </div>
+                <div class="stack-list">
+                <p class="stack-category">Фреймворки</p>
+                <div v-for="framework in frameworks" :key="framework">
+                  <q-checkbox v-model="selectedStack[framework]" :label="framework" />
+                </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">Базы данных</p>
+                  <div v-for="database in databases" :key="database">
+                    <q-checkbox v-model="selectedStack[database]" :label="database" />
+                  </div>
+                </div>
+                <div class="stack-list">
+                  <p class="stack-category">DevOps</p>
+                  <div v-for="devop in devops" :key="devop">
+                    <q-checkbox v-model="selectedStack[devop]" :label="devop" />
+                  </div>
+                </div>
+              </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
     </div>
 </template>
@@ -285,9 +392,9 @@
 
   .projects {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Минимум 300px, максимум 1fr */
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Минимум 300px, максимум 1fr */
     gap: 20px; /* Отступ между карточками */
-    width: 80vw;
+    width: 70vw;
     max-width: 1200px; /* Ограничиваем максимальную ширину */
     margin-top: 20px;
     padding: 10px;
@@ -409,11 +516,130 @@
   margin-top: 10px;
 }
 
+.filters-container {
+  position: sticky;
+  margin-top: 30px;
+  top: 20px;
+  height: fit-content;
+  align-self: flex-start;
+}
+
+.stack-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.stack-category {
+  text-align: center;
+  color: #41789C;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+}
+
+
+.technologies {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+    gap: 50px;
+  }
+
+  .stack-container {
+    display: flex;
+    justify-self: center;
+    max-width: 1200px;
+  }
+
+.filters {
+  width: 200px;
+  padding: 15px;
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid rgba(141, 183, 202, 0.342);
+}
+
+.search-input {
+  margin-top: 50px; width: 80%;
+}
+
+.filters-part {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: rgb(22, 47, 65);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .filters-title {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: rgb(22, 47, 65);
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .reset-btn, .reset-btn .block  {
+  margin: 5px auto 5px auto !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  padding: 0 16px; /* или любые другие значения по вашему вкусу */
+  width: 100%;
+}
+
+.stack-btn {
+  margin: 0px auto 20px auto !important;
+  justify-content: center !important;
+  align-items: center !important;
+  display: flex !important;
+  padding: 0 16px; /* или любые другие значения по вашему вкусу */
+  width: 100%;
+}
+
+  .content-wrapper {
+  display: flex;
+  margin-top: 20px;
+  margin-left: 20px;
+  width: 100%;
+  max-width: 1400px;
+  gap: 20px;
+}
+
  @media screen and (max-width: 767px) {
   .project-panel {
     width: 75%;
+    right: -75%;
+  }
+
+  .content-wrapper{
+  flex-direction: column;
+  min-height: fit-content;
+  }
+
+  .filters-container {
+    position: static;
+    display: flex;
+    align-self: center;
+    width: 75%;
+    margin-bottom: 20px;
+    order: -1;
+    margin-top: 0;
+  }
+
+  .filters {
+    width: 100%;
+  }
+
+  .content-wrapper {
+    align-items: center;
+  }
+
+  .search-input {
+    margin-top: 20px;
   }
  }
+
+ 
 
 .panel-open {
   right: 0;
@@ -473,6 +699,7 @@ import { AuthService } from 'src/services/auth.service';
 import type { IProjects, IRialto, ITeam, IToProjectRequest, IUser } from 'src/types/types';
 import { computed, onMounted, ref } from 'vue';
 import { toast } from 'vue3-toastify';
+import { languages, devops, databases, frameworks } from '../types/technologies'
 
 
  const projects = ref<IProjects[]>([])
@@ -490,12 +717,57 @@ import { toast } from 'vue3-toastify';
  const isProjectPanelOpen = ref(false)
  const selectedProject = ref<IProjects | null>(null)
 
+ const publishedFilter = ref<boolean>(false)
+ const revisionFilter = ref<boolean>(false)
+ const pendingFilter = ref<boolean>(false)
+ const in_progressFilter = ref<boolean>(false)
+ const completedFilter = ref<boolean>(false)
+ const recruitmentOpenFilter = ref<boolean>(false)
+ const recruitmentCloseFilter = ref<boolean>(false)
+
+ const searchRequest = ref<string>('')
+
+ const chooseStack = ref<boolean>(false)
+const selectedStack = ref<Record<string, boolean>>({})
+
+const clearStack = () => {
+    languages.forEach(lang => selectedStack.value[lang] = false)
+    frameworks.forEach(framework => selectedStack.value[framework] = false)
+    databases.forEach(db => selectedStack.value[db] = false)
+    devops.forEach(devop => selectedStack.value[devop] = false)
+}
+
  const teamSelecting = ref<boolean>(false)
 
  const openProjectPanel = (project: IProjects) => {
   selectedProject.value = project;
   isProjectPanelOpen.value = true;
 };
+
+const parametrWord = (count: number) => {
+  if (count > 9) {
+    if (count % 10 === 1 && Math.floor(count / 10) % 10 !== 1) {
+      return 'параметр'
+    }
+    else if (count % 10 >= 2 && count % 10 <= 4 && Math.floor(count / 10) % 10 !== 1) {
+      return 'параметра'
+    }
+    else {
+      return 'параметров'
+    }
+  }
+  else {
+    if (count % 10 === 1) {
+      return 'параметр'
+    }
+    else if (count % 10 >= 2 && count % 10 <= 4) {
+      return 'параметра'
+    }
+    else {
+      return 'параметров'
+    }
+  }
+}
 
 const closeProjectPanel = () => {
   isProjectPanelOpen.value = false;
@@ -518,10 +790,6 @@ function formatDateToRussianShort(isoDateString: string): string {
   
   return `${formattedDay}.${formattedMonth}.${year}`;
 }
-
-// Пример использования:
-const isoDate = "2025-04-22T11:38:42.410Z";
-console.log(formatDateToRussianShort(isoDate));
 
  const changeRialto = ref<boolean>(false)
 
@@ -565,6 +833,36 @@ console.log(formatDateToRussianShort(isoDate));
   'close': 'закрыт'
  }
 
+ const filteredStackCount = () => {
+  let count = 0
+
+  languages.forEach(lang => {
+    if (selectedStack.value[lang] === true) {
+      count += 1
+    }
+  })
+
+  databases.forEach(db => {
+    if (selectedStack.value[db] === true) {
+      count += 1
+    }
+  })
+
+  devops.forEach(devop => {
+    if (selectedStack.value[devop] === true) {
+      count += 1
+    }
+  })
+
+  frameworks.forEach(framework => {
+    if (selectedStack.value[framework] === true) {
+      count += 1
+    }
+  })
+  
+  return count
+ }
+
  const statusInterp = {
   'pending': 'На рассмотрении',
   'published': 'Опубликован',
@@ -573,9 +871,71 @@ console.log(formatDateToRussianShort(isoDate));
   'completed': 'Выполнен',
  }
 
+ const stackFilter = (project: IProjects) => {
+  let flag = true
+  languages.forEach(lang => {
+    if (selectedStack.value[lang] === true && AuthService.parseStack(project.stack)?.includes(lang) === false) {
+      flag = false
+    }
+  })
+
+  databases.forEach(db => {
+    if (selectedStack.value[db] === true && AuthService.parseStack(project.stack)?.includes(db) === false) {
+      flag = false
+    }
+  })
+
+  frameworks.forEach(framework => {
+    if (selectedStack.value[framework] === true && AuthService.parseStack(project.stack)?.includes(framework) === false) {
+      flag = false
+    }
+  })
+
+  devops.forEach(devop => {
+    if (selectedStack.value[devop] === true && AuthService.parseStack(project.stack)?.includes(devop) === false) {
+      flag = false
+    }
+  })
+
+  return flag
+ }
+
  const filteredProjects = computed(() => {
-  return projects.value.filter(project => project.rialtoId === currentRialtoId.value);
+  return projects.value.filter(project => {
+    const mathcedRialto = project.rialtoId === currentRialtoId.value
+
+    const matchesSearch = searchRequest.value === '' || 
+      project.title.toLowerCase().includes(searchRequest.value.toLowerCase()) || 
+      project.solution.toLowerCase().includes(searchRequest.value.toLowerCase());
+
+    const matchedStatus = (!publishedFilter.value && !completedFilter.value && !revisionFilter.value && !pendingFilter.value && !in_progressFilter.value) ||
+    (publishedFilter.value && project.status === 'published') ||
+    (completedFilter.value && project.status === 'completed') ||
+    (in_progressFilter.value && project.status === 'in_progress') ||
+    (pendingFilter.value && project.status === 'pending') ||
+    (revisionFilter.value && project.status === 'revision')
+
+    const matchedStack = (filteredStackCount() === 0) || stackFilter(project)
+
+    const matchedRecruitment = (!recruitmentOpenFilter.value && !recruitmentCloseFilter.value) ||
+    (recruitmentOpenFilter.value && project.recruitment ==='open') ||
+    (recruitmentCloseFilter.value && project.recruitment === 'close')
+
+    return mathcedRialto && matchedStatus && matchedRecruitment && matchesSearch && matchedStack
+  });
 });
+
+const resetFilters = () => {
+  publishedFilter.value = false
+  completedFilter.value = false
+  pendingFilter.value = false
+  in_progressFilter.value = false
+  revisionFilter.value = false
+  recruitmentOpenFilter.value = false
+  recruitmentCloseFilter.value = false
+
+  clearStack()
+}
 
  const loadInitiatorData = async (projectId: number, initiatorId: number) => {
   try {
@@ -638,7 +998,7 @@ console.log(formatDateToRussianShort(isoDate));
       })
     )
 
-    console.log(myTeamsRequests.value)
+    clearStack()
 
     projects.value.forEach(project => {
       loadInitiatorData(project.id, project.userId).catch(error => console.error(error))
