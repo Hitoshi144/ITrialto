@@ -40,8 +40,28 @@ const routes: RouteRecordRaw[] = [
     {
       path: 'my-teams',
       name: 'my-teams',
-      component: () => import('../components/MyTeams.vue'),
-      meta: {requiresAuth: true}
+      component: () => import('../pages/MyTeams.vue'),
+      meta: {requiresAuth: true},
+      children: [
+        {
+          path: '',
+          name: 'my-teams-default',
+          redirect: {name: 'i-member'},
+        },
+        {
+          path: 'i-member',
+          name: 'i-member',
+          component: () => import('../components/MemberTeamList.vue')
+        },
+        {
+          path: 'create-requests',
+          name: 'create-requests',
+          component: () => import('../components/CreateTeamRequests.vue'),
+          props: () => ({
+            isDeleteDialogOpen: false
+          })
+        }
+      ]
     },
     {
       path: 'requests-moderation',

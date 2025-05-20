@@ -26,59 +26,7 @@
           class="beautiful-bg-2"
         >
           <q-tab-panel name="iMember">
-            <p class="i-member-teams-title">Команд: {{ teamsByMemberId.length }}</p>
-            <div v-for="team in teamsByMemberId" :key="team.id">
-                <q-separator />
-                <div>
-                <p class="team-title">{{ team.title }}</p>
-                </div>
-                <div class="team-info">
-                    <div class="team-title-panel" style="flex-direction: column; width: 100%;">
-                        <p class="team-description"><strong>Описание:</strong></p>
-                        <p class="team-description">{{ team.description }}</p>
-                    </div>
-                    <div class="team-title-panel about-team" style="flex-direction: column;">
-                        <p class="team-description"><strong>Тим-лидер:</strong> {{ teamsByMemberIdLeaders[team.id]?.firstname }} {{ teamsByMemberIdLeaders[team.id]?.lastname }}</p>
-                        <p class="team-description"><strong>Дата создания:</strong> {{ dateInterpretation(team.createdAt) }}</p>
-                        <p class="team-description"><strong>Статус:</strong> {{ team.currentProjectId ? 'В работе' : 'В поисках' }}</p>
-                        <p class="team-description"><strong>Приватность:</strong> {{ privacyInterpretation[team.status] }}</p>
-                        <p class="team-description"><strong>Количество участников:</strong> {{ team.members.length + 1}}</p>
-                    </div>
-                </div>
-
-                <div class="team-title-panel" style="max-width: 100%;">
-                  <div v-if="teamStacks[team.id]!.length > 0" class="stack-panel">
-                    <p class="team-description" style="align-self: center;"><strong>Стек технологий: </strong></p>
-                    <div class="stack-card" v-for="tech in teamStacks[team.id]" :key="tech">
-                      <p style="margin: 0;">{{ tech }}</p>
-                    </div>
-                  </div>
-                  <div v-else>
-                    <p class="team-description" style="align-self: center;"><strong>Стек отсутствует</strong></p>
-                  </div>
-                </div>
-
-                <div class="memberList">
-                  <div class="team-title-panel members-panel">
-                    <img class="user-avatar" v-if="teamsByMemberIdLeaders[team.id]?.id && memberAvatars[teamsByMemberIdLeaders[team.id]?.id ?? '']" 
-                    :src="memberAvatars[teamsByMemberIdLeaders[team.id]?.id ?? ''] ?? ''" />
-                    <img v-else class="user-avatar" src="../assets/avatar_alt.png" />
-                    <div class="member-info">
-                      <q-badge color="accent" style="align-self: center; margin-bottom: 10px;" class="leader-badge">Тим-лидер</q-badge>
-                      <p class="team-description" style="text-align: center;">{{ teamsByMemberIdLeaders[team.id]?.firstname }} {{ teamsByMemberIdLeaders[team.id]?.lastname }}</p>
-                      <p class="team-description" style="text-align: center; font-size: 14px; text-decoration: underline;">{{ teamsByMemberIdLeaders[team.id]?.mail }}</p>
-                    </div>
-                  </div>
-                  <div class="team-title-panel members-panel" v-for="member in teamsByMemberIdMembers[team.id]" :key="member.id">
-                      <img class="user-avatar" v-if="memberAvatars[member.id]" :src="memberAvatars[member.id] ?? ''" />
-                      <img v-else class="user-avatar" src="../assets/avatar_alt.png" />
-                      <div class="member-info">
-                      <p class="team-description" style="text-align: center;">{{ member.firstname }} {{ member.lastname }}</p>
-                      <p class="team-description" style="text-align: center; font-size: 14px; text-decoration: underline;">{{ member.mail }}</p>
-                    </div>
-                    </div>
-                </div>
-            </div>
+            <RouterView />
           </q-tab-panel>
   
           <q-tab-panel name="iTeamLeader">
@@ -273,34 +221,7 @@
           </q-tab-panel>
 
           <q-tab-panel name="createTeamRequests">
-            <p class="i-member-teams-title">Заявок на рассмотрении: {{ createTeamRequests.length }}</p>
-            <div v-for="request in createTeamRequests" :key="request.id">
-              <q-separator />
-              <p class="team-description" style="margin-top: 20px;"><strong>Название:</strong> {{ request.title }}</p>
-              <p class="team-description" style="margin-top: 15px;"><strong>Описание:</strong> {{ request.description }}</p>
-              <q-btn outline label="удалить заявку" style="border-radius: 10px; margin-top: 15px; display: flex; justify-self: flex-end;" color="primary" icon="delete_forever" @click="createTeamReqDeleting = true" />
-
-              <q-dialog v-model="createTeamReqDeleting" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
-                <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
-                  <q-card-section>
-                    <div style="display: flex; justify-content: space-between; flex-direction: row;">
-                          <p class="text-h5" style="color: #41789C;">Удаление заявки</p>
-                          <q-btn flat color="primary" rounded icon="close" v-close-popup />
-                        </div>
-                  </q-card-section>
-                  <q-card-section>
-                    <p class="text-h6" style="color: #41789C; margin-left: 30px;">Вы уверены, что хотите удалить заявку на создание команды?</p>
-                  </q-card-section>
-                  <q-card-section>
-                    <div style="display: flex; flex-direction: row; justify-content: space-between;">
-                          <q-btn outline color="negative" style="border-radius: 10px; margin-left: 20px;" label="Да, удалить" @click="deleteCreateTeamReq(request.id)" />
-                          <q-btn filled color="primary" style="border-radius: 10px; margin-right: 20px;" label="Нет, не удалять" @click="createTeamReqDeleting = false" />
-                        </div>
-                  </q-card-section>
-                </q-card>
-              </q-dialog>
-            
-            </div>
+            <RouterView v-model:is-delete-dialog-open="createTeamReqDeleting" />
           </q-tab-panel>
   
         </q-tab-panels>
@@ -484,21 +405,23 @@
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
 import { useUserStore } from 'src/store';
-import type { ICreateTeamRequest, ITeam, ITeamRequests, IUser } from 'src/types/types';
-import { onMounted, onUnmounted, ref } from 'vue';
+import type { ITeam, ITeamRequests, IUser } from 'src/types/types';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { toast } from 'vue3-toastify';
+import { privacyInterpretation, dateInterpretation, requestWordInterpretation } from '../services/interpritation.service'
+import { TeamService } from '../services/team.service'
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
+const router = useRouter();
 
   
   const tab = ref<string>('iMember');
 
   const user = useUserStore().getUser
 
-  const teamsByMemberId = ref<ITeam[]>([])
   const teamsByLeaderId = ref<ITeam[]>([])
-  const teamsByMemberIdMembers = ref<Record<string, IUser[]>>({})
-  const teamsByMemberIdLeaders = ref<Record<string, IUser>>({})
   const teamsByLeaderIdMembers = ref<Record<string, IUser[]>>({})
-  const createTeamRequests = ref<ICreateTeamRequest[]>([])
 
   const requestsToTeam = ref<ITeamRequests[]>([])
 
@@ -506,6 +429,7 @@ import { toast } from 'vue3-toastify';
 
   const teamStacks = ref<Record<number, string[]>>({})
 
+  const createTeamReqDeleting = ref<boolean>(false)
 
 
   const teamIsEditing = ref<boolean>(false)
@@ -516,8 +440,8 @@ import { toast } from 'vue3-toastify';
   const teamIsDeleting = ref<boolean>(false)
   const memberIsDeleting = ref<boolean>(false)
   const showRequestToTeam = ref<boolean>(false)
-  const createTeamReqDeleting = ref<boolean>(false)
 
+  
   const loadAvatar = async (userId: number): Promise<void> => {
   try {
     const response = await AuthService.getAvatar(userId);
@@ -532,18 +456,7 @@ import { toast } from 'vue3-toastify';
     console.error(`Ошибка загрузки аватара пользователя ${userId}:`, error);
   }
 };
-
-  const loadTeamLeaderData = async (teamId: number, teamLeaderId: number) => {
-    try{
-      const response = await instance.get<IUser>(`user/${teamLeaderId}`);
-        teamsByMemberIdLeaders.value[teamId] = response.data;
-
-        await loadAvatar(response.data.id);
-    }
-    catch (error) {
-      console.log('Ошибка загрузки данных лидеров:', error)
-    }
-  }
+  
 
   const loadMemberData = async (teamId: number, memberId: number) => {
     try {
@@ -556,32 +469,9 @@ import { toast } from 'vue3-toastify';
     }
   }
 
-  const loadStack = async (teamId: number): Promise<string[]> => {
-    try {
-    const response = await instance.get(`/teams/stack/${teamId}`);
-    return response.data; // Предполагаем, что сервер возвращает string[]
-  } catch (error) {
-    console.error(`Ошибка загрузки стека для команды ${teamId}:`, error);
-    return []; // Возвращаем пустой массив в случае ошибки
-  }
-  }
   
-  const loadMembersData = async (teamId: number, memberIds: string[]) => {
-  try {
-    const membersPromises = memberIds.map(id => 
-      instance.get<IUser>(`user/${id}`)
-    );
-    const membersResponses = await Promise.all(membersPromises);
-    teamsByMemberIdMembers.value[teamId] = membersResponses.map(r => r.data);
-
-    await Promise.all(
-      membersResponses.map(response => 
-        loadAvatar(response.data.id)
-    ));
-  } catch (error) {
-    console.error('Ошибка загрузки данных участников:', error);
-  }
-};
+  
+  
 
 const loadMembersDataByLeaderId = async (teamId: number, memberIds: string[]) => {
   try {
@@ -600,10 +490,7 @@ const loadMembersDataByLeaderId = async (teamId: number, memberIds: string[]) =>
   }
 };
 
-  const privacyInterpretation: Record<string, string> = {
-  close: "Закрыта",
-  open: "Открыта"
-};
+  
 
 const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
   try {
@@ -655,7 +542,6 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
   const sendTeamCreatingRequest = async () => {
     try {
       await instance.post('create-team-request', {title: teamTitle.value, description: teamDescription.value})
-      createTeamRequests.value = (await instance.get('create-team-request/my')).data
       toast.success('Заявка отправлена')
       teamIsCreating.value = false
       createTeamReqDeleting.value = false
@@ -668,7 +554,7 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
   const deleteTeam = async (teamId: string) => {
     try {
       await instance.delete(`teams/${teamId}`)
-      teamsByMemberId.value = teamsByLeaderId.value.filter(req => req.id != Number(teamId))
+      teamsByLeaderId.value = teamsByLeaderId.value.filter(req => req.id != Number(teamId))
     }
     catch (error: any) {
       toast.error(error.message)
@@ -687,23 +573,9 @@ const changeTeamPrivacy = async (teamId: number, teamStastus: string) => {
     }
   }
 
-  const dateInterpretation = (date: string) => {
-  const tempCreatedAt = new Date(date);
-  const pad = (num: number) => num.toString().padStart(2, '0');
-  return `${pad(tempCreatedAt.getDate())}.${pad(tempCreatedAt.getMonth() + 1)}.${tempCreatedAt.getFullYear()}`;
-};
+  
 
-const requestWordInterpretation = (requestsCount: number) =>{
-  if (requestsCount === 1) {
-    return 'заявка'
-  }
-  else if (requestsCount > 1 && requestsCount < 5) {
-    return 'заявки'
-  }
-  else {
-    return 'заявок'
-  }
-}
+
 
 const rejectRequestToTeam = async (requestId: number, teamId: number) => {
   try{
@@ -741,48 +613,52 @@ const approveRequestToTeam = async (requestId: number, teamId: number, memberId:
   }
 }
 
- const deleteCreateTeamReq = async (requestId: number) => {
-  try {
-    await instance.delete(`create-team-request/${requestId}`)
-
-    createTeamRequests.value = createTeamRequests.value.filter(req => req.id != requestId)
-    toast.success('Заявка удалена')
-  }
-  catch (error: any) {
-    console.log(error.message)
-  }
- }
+ 
 
 const clearTeamVariables = () => {
   teamTitle.value = ''
   teamDescription.value = ''
 }
 
+watch(
+  () => route.name,
+  (newRouteName) => {
+    if (newRouteName === 'i-member') {
+      tab.value = 'iMember';
+    }
+    else if (newRouteName === 'create-requests') {
+      tab.value = 'createTeamRequests'
+    }
+    // Добавьте другие условия для других вкладок
+  },
+  { immediate: true } // Выполнить сразу при создании
+);
+
+watch(tab, (newTab) => {
+  if (newTab === 'iMember') {
+    router.push({ name: 'i-member' }).catch(error => console.error('Navigation error: ', error))
+  }
+  else if (newTab === 'createTeamRequests') {
+    router.push({name: 'create-requests'}).catch(error => console.error('Navigation error: ', error))
+  }
+})
+
   onMounted(async () => {
-     teamsByMemberId.value = (await instance.get(`teams/member/${user?.id}`)).data
      teamsByLeaderId.value = (await instance.get('teams')).data
      requestsToTeam.value = (await instance.get('team-request/leader')).data
-     createTeamRequests.value = (await instance.get('create-team-request/my')).data
 
     
      
-     teamsByMemberId.value.forEach(team => {
-     loadMembersData(team.id, team.members).catch(error => console.error('Error loading members:', error))});
+     
 
 
-     teamsByMemberId.value.forEach(team => {
-      loadTeamLeaderData(team.id, team.teamLeaderId).catch(error => console.error('Error loading leaders:', error));
-     })
+     
 
-     await Promise.all(
-      teamsByMemberId.value.map(async team => {
-        teamStacks.value[team.id] = await loadStack(team.id)
-      })
-    )
+     
 
     await Promise.all(
       teamsByLeaderId.value.map(async team => {
-        teamStacks.value[team.id] = await loadStack(team.id)
+        teamStacks.value[team.id] = await TeamService.loadStack(team.id)
       })
     )
 
