@@ -60,7 +60,15 @@ const routes: RouteRecordRaw[] = [
           props: () => ({
             isDeleteDialogOpen: false
           })
-        }
+        },
+        {
+          path: 'i-teamleader',
+          name: 'i-teamleader',
+          component: () => import('../components/LeaderTeamList.vue'),
+          props: () => ({
+            isTeamDeleteDialogOpen: false
+          })
+        },
       ]
     },
     {

@@ -145,6 +145,21 @@
     color: #E0EEF8;
     background-color: #41789C;
 }
+
+@media screen and (max-width: 700px) {
+  .team-info {
+      flex-direction: column;
+      justify-content: center;
+      gap: 0px;
+      .about-team {
+          margin-left: 0;
+      }
+  }
+
+  .team-title-panel {
+    max-width: 100%;
+  }
+}
 </style>
 
 <script lang="ts" setup>
