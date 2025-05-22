@@ -95,7 +95,7 @@
     <div class="projects">
       <q-intersection once v-for="project in filteredProjects" :key="project.id" transition="scale">
 
-        <q-card flat bordered class="project-card">
+        <q-card flat bordered class="project-card" :data-project-id="project.id">
 
           <q-card-section>
           <p class="project-title" @click="openProjectPanel(project)">{{ project.title }}</p>
@@ -697,10 +697,13 @@
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
 import type { IProjects, IRialto, ITeam, IToProjectRequest, IUser } from 'src/types/types';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue3-toastify';
 import { languages, devops, databases, frameworks } from '../types/technologies'
+import { useRoute, useRouter } from 'vue-router';
 
+const route = useRoute()
+const router = useRouter()
 
  const projects = ref<IProjects[]>([])
  const rialtos = ref<IRialto[]>([])
@@ -730,6 +733,17 @@ import { languages, devops, databases, frameworks } from '../types/technologies'
  const chooseStack = ref<boolean>(false)
 const selectedStack = ref<Record<string, boolean>>({})
 
+const scrollToProject = async (projectId: number) => {
+  await nextTick();
+  const projectElement = document.querySelector(`[data-project-id="${projectId}"]`);
+  if (projectElement) {
+    projectElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+};
+
 const clearStack = () => {
     languages.forEach(lang => selectedStack.value[lang] = false)
     frameworks.forEach(framework => selectedStack.value[framework] = false)
@@ -739,7 +753,15 @@ const clearStack = () => {
 
  const teamSelecting = ref<boolean>(false)
 
- const openProjectPanel = (project: IProjects) => {
+ const openProjectPanel = async (project: IProjects) => {
+  await router.push({
+    name: 'projects',
+    params: {
+      rialtoId: project.rialtoId,
+      projectId: project.id.toString() // Преобразуем число в строку, если нужно
+    }
+  });
+  
   selectedProject.value = project;
   isProjectPanelOpen.value = true;
 };
@@ -769,8 +791,12 @@ const parametrWord = (count: number) => {
   }
 }
 
-const closeProjectPanel = () => {
+const closeProjectPanel = async () => {
   isProjectPanelOpen.value = false;
+  await router.push({
+    name: 'projects',
+    params: {rialtoId: currentRialtoId.value}
+  })
   // Небольшая задержка перед очисткой, чтобы анимация закрытия завершилась
   setTimeout(() => {
     selectedProject.value = null;
@@ -823,9 +849,18 @@ function formatDateToRussianShort(isoDateString: string): string {
   return rialtos.value.find(rialto => rialto.id === currentRialtoId.value)
  })
 
- const selectRialto = (rialtoId: number) => {
+ const selectRialto = async (rialtoId: number) => {
   currentRialtoId.value = rialtoId
   changeRialto.value = false
+
+  await router.push({
+    name: 'projects',
+    params: { rialtoId }
+  })
+
+  if (selectedProject.value && selectedProject.value.rialtoId !== rialtoId) {
+    await closeProjectPanel()
+  }
  }
 
  const recruitmentInterp = {
@@ -980,8 +1015,39 @@ const resetFilters = () => {
   }
  }
 
+ watch(() => route.params.projectId, async (newProjectId) => {
+  if (newProjectId) {
+    const projectId = Number(newProjectId);
+    const project = projects.value.find(p => p.id === projectId);
+    
+    if (project) {
+      // Убедимся, что биржа выбрана правильно
+      if (currentRialtoId.value !== project.rialtoId) {
+        currentRialtoId.value = project.rialtoId;
+        await nextTick(); // Ждем обновления DOM
+      }
+      
+      // Открываем панель проекта
+      await openProjectPanel(project);
+      
+      // Скроллим к проекту
+      await scrollToProject(projectId);
+    }
+  }
+}
+);
+
+watch(() => route.params.rialtoId, (newRialtoId) => {
+  if (newRialtoId) {
+    const rialtoId = Number(newRialtoId)
+    currentRialtoId.value = rialtoId
+  }
+})
+
  onMounted (async () => {
   try {
+    currentRialtoId.value = Number(route.path.split('/')[3])
+
     const [projectsResponse, rialtosResponse, teamsResponse] = await Promise.all([
       instance.get<IProjects[]>('project'),
       instance.get<IRialto[]>('rialto'),
@@ -1007,6 +1073,18 @@ const resetFilters = () => {
     projects.value.forEach(project => {
       loadRequestsCount(project.id).catch(error => console.error(error))
     })
+
+    if (route.params.projectId) {
+      const projectId = Number(route.params.projectId)
+      const project = projects.value.find(p => p.id === projectId)
+
+      if (project) {
+        currentRialtoId.value = project.rialtoId
+        await nextTick()
+        await openProjectPanel(project)
+        await scrollToProject(projectId)
+      }
+    }
   }
   catch (error: any) {
     console.error(error.message)

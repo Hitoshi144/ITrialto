@@ -12,8 +12,8 @@
       <nav>
         <div class="tabs">
 		<input type="radio" id="radio-1" name="tabs" :checked="route.name === 'projects'" />
-		<label class="tab" for="radio-1" @click="router.push({name: 'projects'})">Биржа проектов</label>
-		<input type="radio" id="radio-2" name="tabs" :checked="route.name === 'teams-registry'"/>
+		<label class="tab" for="radio-1" @click="router.push({name: 'projects', params: {rialtoId: 4}})">Биржа проектов</label>
+		<input type="radio" id="radio-2" name="tabs" :checked="route.name === 'teams-registry' || route.name === 'team-detail'"/>
 		<label class="tab" for="radio-2" @click="router.push({name: 'teams-registry'})"
     v-if="user?.role === 'teacher' || user?.role === 'student'"
     >Реестр команд</label>
@@ -311,7 +311,7 @@ import logoutImg from '../assets/logout.png'; // Добавьте этот им�
   const router = useRouter()
   const route = useRoute()
 
-  const isHeaderRoute = computed( () => route.name === 'projects' || route.name === 'teams-registry')
+  const isHeaderRoute = computed( () => route.name === 'projects' || route.name === 'teams-registry' || route.name === 'team-detail')
   
   const getImageUrl = (name: string) => {
   return new URL(`../assets/${name}`, import.meta.url).href;

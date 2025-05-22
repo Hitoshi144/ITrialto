@@ -14,7 +14,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('pages/HomePage.vue'),
     meta: {requiresAuth: true},
     children: [{
-      path: 'projects',
+      path: 'projects/:rialtoId?/:projectId?',
       name: 'projects',
       component: () => import('components/ProjectsTable.vue'),
       meta: {requiresAuth: true}
@@ -36,6 +36,12 @@ const routes: RouteRecordRaw[] = [
       name: 'teams-registry',
       component: () => import('../components/TeamsRegistryPage.vue'),
       meta: {requiresAuth: true}
+    },
+    {
+      path: 'teams-registry/:teamId',
+      name: 'team-detail',
+      component: () => import('../components/TeamsRegistryPage.vue'),
+      props: true
     },
     {
       path: 'my-teams',

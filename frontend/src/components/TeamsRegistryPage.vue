@@ -68,6 +68,7 @@
           virtual-scroll
           :virtual-scroll-item-size="48"
           row-key="id"
+          @row-click="onRowClick"
           style="border-radius: 15px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
     backdrop-filter: blur(5px);
     box-shadow: 0 0px 1px 0 rgba(0, 0, 0, 0.37);
@@ -88,7 +89,11 @@
         </template>
 
         <template v-slot:body="props">
-          <q-tr :props="props">
+          <q-tr :props="props"
+          @click="onRowClick($event, props.row)"
+          :data-team-id="props.row.id"
+          :class="{ 'selecet-row': expandedTeamId === props.row.id }"
+          >
             
             <q-td
               v-for="col in props.cols"
@@ -104,12 +109,12 @@
         color="accent" 
         round 
         dense 
-        @click="props.expand = !props.expand" 
-        :icon="props.expand ? 'remove' : 'add'"
+        @click.stop="toggleExpand(props.row.id)" 
+        :icon="props.expand || expandedTeamId === props.row.id ? 'remove' : 'add'"
       />
             </q-td>
           </q-tr>
-          <q-tr v-show="props.expand" :props="props" class="expand-content">
+          <q-tr v-show="props.expand || expandedTeamId === props.row.id" :props="props" class="expand-content">
             <q-td colspan="100%">
               <div class="text-left q-pa-md">
                 <div class="team-data-container">
@@ -244,14 +249,20 @@
 </template>
   
   <script setup lang="ts">
-  import { ref, onMounted, onUnmounted, computed } from 'vue';
+  import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
   import { instance } from 'src/api/axios.api';
   import type { ITeam, ITeamRequests, IUser } from '../types/types';
 import { useUserStore } from 'src/store';
 import { toast } from 'vue3-toastify';
 import { languages, devops, databases, frameworks } from '../types/technologies'
+import { useRoute, useRouter } from 'vue-router';
 
-  const teams = ref<ITeam[] | null>(null);
+const route = useRoute()
+const router = useRouter()
+
+const expandedTeamId = ref<number | null>(null)
+
+const teams = ref<ITeam[] | null>(null);
   const loading = ref(true);
   const error = ref(false);
 
@@ -290,6 +301,39 @@ const selectedStack = ref<Record<string, boolean>>({})
 
   const getImageUrl = (name: string) => {
   return new URL(`../assets/${name}`, import.meta.url).href;
+};
+
+const toggleExpand = async (teamId: number) => {
+  if (expandedTeamId.value === teamId) {
+    await router.push({ name: 'teams-registry' })
+    expandedTeamId.value = null;
+  } else {
+    await router.push({ name: 'team-detail', params: { teamId } });
+    expandedTeamId.value = teamId;
+  }
+};
+
+const scrollToExpandedTeam = async () => {
+  await nextTick();
+  if (expandedTeamId.value) {
+    // Ищем конкретную строку по ID команды
+    const rowElement = document.querySelector(`[data-team-id="${expandedTeamId.value}"]`);
+    if (rowElement) {
+      // Плавный скролл с небольшим отступом сверху
+      rowElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+      
+      // Дополнительный скролл через 100мс для Q-Table
+      setTimeout(() => {
+        rowElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 100);
+    }
+  }
 };
 
 const avatarUrls = ref<Record<number, string>>({});
@@ -536,9 +580,41 @@ const sendRequestToTeam = async (teamId: number) => {
 
   return flag
  }
+
+ const onRowClick = async (event: Event, row: ITeam) => {
+  if (expandedTeamId.value === row.id) {
+    await router.push({ name: 'teams-registry' });
+    expandedTeamId.value = null;
+  } else {
+    await router.push({ name: 'team-detail', params: { teamId: row.id } });
+    expandedTeamId.value = row.id;
+    await scrollToExpandedTeam();
+  }
+};
+
+watch(() => route.params.teamId, async (newTeamId) => {
+  if (newTeamId) {
+    const teamId = Number(newTeamId);
+    if (teams.value?.some(team => team.id === teamId)) {
+      expandedTeamId.value = teamId;
+      await nextTick();
+      await scrollToExpandedTeam();
+    }
+  }
+}, { immediate: true });
   
+ const handleBackButton = () => {
+  if (route.params.teamId) {
+    expandedTeamId.value = Number(route.params.teamId);
+  } else {
+    expandedTeamId.value = null;
+  }
+};
+
   onMounted(async () => {
   try {
+    window.addEventListener('popstate', handleBackButton);
+
     const response = await instance.get<ITeam[]>('/teams/all');
     teams.value = response.data;
 
@@ -562,6 +638,17 @@ const sendRequestToTeam = async (teamId: number) => {
       ...Array.from(allUserIds).map(id => fetchUserData(id)),
       ...Array.from(allUserIds).map(id => fetchAvatar(id))
     ]);
+
+    if (route.params.teamId) {
+      const teamId = Number(route.params.teamId)
+      if (teams.value.some(team => team.id === teamId)) {
+        expandedTeamId.value = teamId
+        await nextTick()
+        setTimeout(() => {
+  scrollToExpandedTeam().catch(e => console.error('Scroll error:', e));
+}, 300);
+      }
+    }
   } catch (e) {
     console.error('Ошибка при загрузке команд:', e);
     error.value = true;
@@ -575,14 +662,32 @@ onUnmounted(() => {
   Object.values(avatarCache.value).forEach(url => {
     URL.revokeObjectURL(url);
   });
+
+  window.removeEventListener('popstate', handleBackButton);
 });
   </script>
   
   <style scoped>
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+.selected-row {
+  background-color: rgba(65, 120, 156, 0.1);
+}
+
+.q-table__container {
+  scroll-behavior: smooth;
+}
+
+[data-team-id] {
+  scroll-margin-top: 20px;
 }
 
   .teams_container {
