@@ -938,9 +938,12 @@ import { toast } from 'vue3-toastify';
 import { QStepper } from 'quasar';
 import { AuthService } from '../services/auth.service'
 import avatarAlt from '../assets/avatar_alt.png'
+import { useRoute, useRouter } from 'vue-router';
 
+const route = useRoute()
+const router = useRouter()
 
-const tab = ref<string>('published')
+const tab = ref<string>(route.query.tab?.toString() || 'published')
 const step = ref<number>(1)
 const stepper = ref<QStepper | null>(null)
 const projectIsCreating = ref<boolean>(false)
@@ -1305,6 +1308,17 @@ const resignTeamFromProject = async (project: IProjects) => {
         toast.error(errorMessage);
   }
 }
+
+watch(tab, async (newTab) => {
+  await router.push({query: {...route.query, tab: newTab}})
+}
+)
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab && newTab !== tab.value) {
+    tab.value = newTab.toString()
+  }
+})
 
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data

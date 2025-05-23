@@ -45,7 +45,7 @@
             >Моя команда</q-item-section>
           </q-item>
           <q-item clickable v-close-popup>
-            <q-item-section class="no-select" @click="router.push({name: 'my-projects'})">Мои проекты</q-item-section>
+            <q-item-section class="no-select" @click="router.push({name: 'my-projects', query: {tab: 'published'}})">Мои проекты</q-item-section>
           </q-item>
           <q-item clickable v-close-popup v-if="user?.role === 'teacher'">
             <q-item-section class="no-select" @click="router.push({name: 'requests-moderation'})">Модерация заявок</q-item-section>
