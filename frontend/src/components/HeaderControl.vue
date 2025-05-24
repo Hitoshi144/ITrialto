@@ -48,7 +48,7 @@
             <q-item-section class="no-select" @click="router.push({name: 'my-projects', query: {tab: 'published'}})">Мои проекты</q-item-section>
           </q-item>
           <q-item clickable v-close-popup v-if="user?.role === 'teacher'">
-            <q-item-section class="no-select" @click="router.push({name: 'requests-moderation'})">Модерация заявок</q-item-section>
+            <q-item-section class="no-select" @click="router.push({name: 'requests-moderation', query: {tab: 'teams'}})">Модерация заявок</q-item-section>
           </q-item>
           <q-separator />
           <q-item clickable v-close-popup @click="logoutHandler" class="logout">

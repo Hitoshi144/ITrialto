@@ -1015,7 +1015,11 @@ const resetFilters = () => {
   }
  }
 
- watch(() => route.params.projectId, async (newProjectId) => {
+ watch(() => route.params.projectId, async (newProjectId, oldProjectId) => {
+  if (oldProjectId && !newProjectId) {
+    await closeProjectPanel()
+    return
+  }
   if (newProjectId) {
     const projectId = Number(newProjectId);
     const project = projects.value.find(p => p.id === projectId);

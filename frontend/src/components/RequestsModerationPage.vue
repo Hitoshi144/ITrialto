@@ -183,8 +183,12 @@
 import { instance } from 'src/api/axios.api';
 import { AuthService } from 'src/services/auth.service';
 import type { ICreateTeamRequest, IProjects, IRialto, IUser } from 'src/types/types';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { toast } from 'vue3-toastify';
+
+const route = useRoute()
+const router = useRouter()
 
  const tab = ref('teams')
 
@@ -348,6 +352,16 @@ const statusInterpretation = {
     createProjectRequests.value.forEach(request => {parseStack(request.id, request.stack)
     getInitiator(request.id, request.userId).catch(error => console.log(error.message))
     })
+ })
+
+ watch(tab, async (newTab) => {
+  await router.push({query: {...route.query, tab: newTab}})
+ }) 
+
+ watch(() => route.query.tab, (newTab) => {
+  if (newTab && newTab !== tab.value) {
+    tab.value = newTab.toString()
+  }
  })
 
  onUnmounted(() => {
