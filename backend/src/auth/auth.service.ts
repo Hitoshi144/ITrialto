@@ -31,7 +31,7 @@ export class AuthService {
     const userResult = await this.userService.findOne(user.mail)
     if (userResult)
     return {
-      id: userResult.id, mail: userResult.mail, firstname: userResult.firstname, lastname: userResult.lastname, group: userResult.group, phone: userResult.phone, role: userResult.role, createAt: userResult.createAt, updateAt: userResult.updateAt, token: this.jwtService.sign({id: user.id, mail: user.mail, firstname: userResult.firstname, lastname: userResult.lastname, group: userResult.group, phone: userResult.phone, role: userResult.role, createAt: userResult.createAt})
+      id: userResult.id, mail: userResult.mail, firstname: userResult.firstname, lastname: userResult.lastname, group: userResult.group, phone: userResult.phone, role: userResult.role, leaderOfTeams: userResult.leaderOfTeams,createAt: userResult.createAt, updateAt: userResult.updateAt, token: this.jwtService.sign({id: user.id, mail: user.mail, firstname: userResult.firstname, lastname: userResult.lastname, group: userResult.group, phone: userResult.phone, role: userResult.role, leaderOfTeams: userResult.leaderOfTeams, createAt: userResult.createAt})
     }
   }
 

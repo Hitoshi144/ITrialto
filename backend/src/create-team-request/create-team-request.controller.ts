@@ -24,6 +24,12 @@ export class CreateTeamRequestController {
     return await this.createTeamRequestService.getUserRequests(req.user.id);
   }
 
+  @Get('my/all')
+  @UseGuards(JwtAuthGuard)
+  async getAllMyRequests(@Request() req) {
+    return await this.createTeamRequestService.getAllUserRequests(req.user.id);
+  }
+
   @Get('pending')
   @UseGuards(JwtAuthGuard)
   async getPendingRequests() {

@@ -40,15 +40,18 @@
             <q-item-section class="no-select">Профиль</q-item-section>
           </q-item>
           <q-separator />
-          <q-item clickable v-close-popup v-if="user?.role === 'teacher' || user?.role === 'student'">
-            <q-item-section class="no-select" @click="router.push({name: 'i-member'})"
+          <q-item clickable v-close-popup v-if="user?.role === 'teacher' || user?.role === 'student'" :to="{name: 'i-member'}">
+            <q-item-section class="no-select"
             >Моя команда</q-item-section>
           </q-item>
-          <q-item clickable v-close-popup>
-            <q-item-section class="no-select" @click="router.push({name: 'my-projects', query: {tab: 'published'}})">Мои проекты</q-item-section>
+          <q-item clickable v-close-popup :to="{name: 'my-projects', query: {tab: 'published'}}">
+            <q-item-section class="no-select">Мои проекты</q-item-section>
           </q-item>
-          <q-item clickable v-close-popup v-if="user?.role === 'teacher'">
-            <q-item-section class="no-select" @click="router.push({name: 'requests-moderation', query: {tab: 'teams'}})">Модерация заявок</q-item-section>
+          <q-item clickable v-close-popup :to="{name: 'my-requests'}">
+            <q-item-section class="no-select">Мои заявки</q-item-section>
+          </q-item>
+          <q-item clickable v-close-popup v-if="user?.role === 'teacher'" :to="{name: 'requests-moderation', query: {tab: 'teams'}}">
+            <q-item-section class="no-select">Модерация заявок</q-item-section>
           </q-item>
           <q-separator />
           <q-item clickable v-close-popup @click="logoutHandler" class="logout">
@@ -177,7 +180,7 @@
     }
   }
 
-  @media (max-width: 690px) {
+  @media (max-width: 817px) {
     .name_rule {
       display: none;
     }
@@ -278,7 +281,7 @@ input[id="radio-3"] {
 	transition: 0.25s ease-out;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 817px) {
 	.tabs {
 		transform: scale(0.8);
 	}

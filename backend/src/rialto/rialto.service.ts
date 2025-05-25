@@ -26,8 +26,8 @@ export class RialtoService {
     return rialtos
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} rialto`;
+  async findOne(id: number) {
+    return await this.rialtoRepository.findOne({where: { id }})
   }
 
   update(id: number, updateRialtoDto: UpdateRialtoDto) {

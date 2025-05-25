@@ -86,6 +86,13 @@ export class CreateTeamRequestService {
     });
   }
 
+  async getAllUserRequests(userId: number) {
+    return await this.requestRepository.find({
+      where: {creatorId: userId},
+      order: {createdAt: 'DESC'}
+    })
+  }
+
   async getAllPendingRequests() {
     return await this.requestRepository.find({ 
       where: { status: 'pending' },

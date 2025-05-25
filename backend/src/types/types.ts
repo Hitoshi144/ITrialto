@@ -9,6 +9,7 @@ export interface IUser {
     phone: string
     role: string
     competencies: string[]
+    leaderOfTeams: number[]
     createAt: Date
     updateAt: Date
 }

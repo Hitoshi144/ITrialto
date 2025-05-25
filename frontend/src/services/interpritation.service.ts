@@ -20,3 +20,16 @@ export const requestWordInterpretation = (requestsCount: number) =>{
       return 'заявок'
     }
   }
+
+export const requestsCategoryInterpretation = {
+  'to-team': 'вступление в команду',
+  'create-team': 'создание команды',
+  'to-project': 'назначение проекта',
+  'create-project': 'создание проекта'
+}
+
+export const statusInterpretation = {
+  'pending': 'на рассмотрении',
+  'approved': 'одобрено',
+  'rejected': 'отклонено'
+}

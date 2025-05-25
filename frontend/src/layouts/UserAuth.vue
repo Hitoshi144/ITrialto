@@ -297,7 +297,7 @@ const router = useRouter()
       if (data) {
         setTokenToLocalStorage('token', data.token)
         useUserStore().login(data)
-        await router.push({name: 'projects-exchange'})
+        await router.push({name: 'projects', params: {rialtoId: 4}})
       }
     }
     catch (err: any) {

@@ -100,5 +100,9 @@ export class TeamRequestService {
   async findMyPendingRequests(userId: number) {
     return await this.teamRequestRepository.find({ where: { userId, status: 'pending' } })
   }
+
+  async findAllMyRequests(userId: number) {
+    return await this.teamRequestRepository.find({ where: { userId } })
+  }
   
 }

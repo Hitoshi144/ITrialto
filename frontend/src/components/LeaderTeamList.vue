@@ -70,6 +70,7 @@
                   </q-dialog>
 
                 </div>
+                <p v-if="team.currentProjectId" class="working-team" @click="router.push({name: 'projects', params: {projectId: team.currentProjectId, rialtoId: givenProjects.find(project => project.id === team.currentProjectId)?.rialtoId}})"><strong>Занимается проектом: {{ givenProjects.find(project => project.id === team.currentProjectId)?.title }}</strong></p>
                 <div class="team-info">
                     <div class="team-title-panel" style="flex-direction: column; width: 100%;">
                         <p class="team-description"><strong>Описание:</strong></p>
@@ -205,6 +206,25 @@
     justify-content: space-between;
 }
 
+.working-team {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #41789C;
+  font-size: 18px;
+  margin: 0;
+  box-shadow: 0 0 0 1px #41789C;;
+  border-radius: 10px;
+  padding: 5px  ;
+  margin-top: 10px;
+  transition: 0.3s ease;
+  display: inline-block; /* Чтобы border-bottom не растягивался на всю ширину */
+  border-bottom: 1px solid transparent; /* Прозрачное подчёркивание */
+}
+
+.working-team:hover {
+  box-shadow: 0 0 0 3px #41789C;;
+  cursor: pointer;
+}
+
 .i-member-teams-title {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     color: #41789C;
@@ -317,13 +337,16 @@
 <script lang="ts" setup>
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
-import type { ITeam, ITeamRequests, IUser } from 'src/types/types';
+import type { IProjects, ITeam, ITeamRequests, IUser } from 'src/types/types';
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { toast } from 'vue3-toastify';
 import { requestWordInterpretation, dateInterpretation, privacyInterpretation } from 'src/services/interpritation.service';
 import { useUserStore } from 'src/store';
 import { AuthService } from 'src/services/auth.service';
 import { TeamService } from 'src/services/team.service';
+import { useRouter } from 'vue-router';
+
+const router = useRouter()
 
 const user = useUserStore().getUser
 
@@ -336,6 +359,7 @@ const memberAvatars = ref<Record<string, string>>({})
 
 const requestsToTeam = ref<ITeamRequests[]>([])
 
+const givenProjects = ref<IProjects[]>([])
 
 const teamIsCreating = ref<boolean>(false)
 
@@ -561,6 +585,9 @@ onMounted(async () => {
     await Promise.all(
       teamsByLeaderId.value.map(async team => {
         teamStacks.value[team.id] = await TeamService.loadStack(team.id)
+        if (team.currentProjectId) {
+          givenProjects.value.push((await instance.get(`project/${team.currentProjectId}`)).data)
+        }
       })
     )
 

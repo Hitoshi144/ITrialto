@@ -23,6 +23,7 @@ export class AuthController {
       group: (await result)?.group,
       phone: (await result)?.phone,
       role: (await result)?.role,
+      leaderOfTeams: (await result)?.leaderOfTeams,
       createdAt: (await result)?.createAt,
       updateAt: (await result)?.updateAt,
       token: (await result)?.token
