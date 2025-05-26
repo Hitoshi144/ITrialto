@@ -97,6 +97,21 @@ export class TeamRequestService {
     await this.teamRequestRepository.delete({ teamId });
   }
 
+  async deleteRequestByRequestId(requestId: number) {
+    try {
+      const request = await this.teamRequestRepository.findOne({where: {id: requestId}})
+
+      if (!request) {
+        throw new BadRequestException('Заявка не найдена')
+      }
+
+      return await this.teamRequestRepository.remove(request)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
   async findMyPendingRequests(userId: number) {
     return await this.teamRequestRepository.find({ where: { userId, status: 'pending' } })
   }

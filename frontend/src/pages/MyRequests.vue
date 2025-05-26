@@ -52,7 +52,7 @@
                     </div>
                     <p class="description text">{{ request.description }}</p>
                     <p class="status text">{{ statusInterpretation[request.status as keyof typeof statusInterpretation] }}</p>
-                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity">
+                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity" @click="goToCreateRequest(request.id)">
                       <span>к заявке <q-icon name="north_east" size="16px" /></span>
                     </button>
                     <div v-else class="btn-width-inner"></div>
@@ -85,7 +85,7 @@
                     </div>
                     <p class="description text">{{ teams.find(team => team.id === request.teamId)?.description }}</p>
                     <p class="status text">{{ statusInterpretation[request.status as keyof typeof statusInterpretation] }}</p>
-                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity">
+                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity" @click="deleteToTeamRequest(request.id)">
                       <span>удалить <q-icon name="cancel" size="16px" /></span>
                     </button>
                     <div v-else class="btn-width-inner"></div>
@@ -120,7 +120,7 @@
                     <p class="description text">{{ rialtos.find(rialto => rialto.id === request.rialtoId)?.title }}</p>
                     <p class="customer text">{{ request.customer }}</p>
                     <p class="status text">{{ statusInterpretation[request.status as keyof typeof statusInterpretation] }}</p>
-                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity">
+                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity" @click="goToProjectCreateRequest(request.id)">
                       <span>К заявке <q-icon name="north_east" size="16px" /></span>
                     </button>
                     <div v-else class="btn-width-inner"></div>
@@ -153,7 +153,7 @@
                     </div>
                     <p class="description text">{{ request.project.title }}</p>
                     <p class="status text">{{ statusInterpretation[request.status as keyof typeof statusInterpretation] }}</p>
-                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity">
+                    <button v-if="request.status === 'pending'" class="btn btn-2 hover-opacity" @click="deleteToProjectRequest(request.id)">
                       <span>Удалить <q-icon name="cancel" size="16px" /></span>
                     </button>
                     <div v-else class="btn-width-inner"></div>
@@ -408,11 +408,16 @@
 </style>
 
 <script lang="ts" setup>
+  /* eslint-disable @typescript-eslint/no-explicit-any */
 import { onMounted, ref } from 'vue';
 import { requestsCategoryInterpretation, statusInterpretation } from 'src/services/interpritation.service';
 import type { ICreateTeamRequest, IProjects, IRialto, ITeam, ITeamRequests, IToProjectRequest } from 'src/types/types';
 import { instance } from 'src/api/axios.api';
 import { useUserStore } from 'src/store';
+import { useRouter } from 'vue-router';
+import { toast } from 'vue3-toastify';
+
+const router = useRouter()
 
 const user = useUserStore().getUser
 
@@ -430,6 +435,45 @@ const teams = ref<ITeam[]>([])
 const createProjectRequests = ref<IProjects[]>([])
 const rialtos = ref<IRialto[]>([])
 const toProjectRequests = ref<IToProjectRequest[]>([])
+
+const goToCreateRequest = async (requestId: number) => {
+  await router.push({
+    name: 'create-requests',
+    hash: `#request-${requestId}`
+  })
+}
+
+const goToProjectCreateRequest = async (requestId: number) => {
+  await router.push({
+    name:'my-projects',
+    hash: `#request-${requestId}`,
+    query: {tab: 'pending'}
+  })
+}
+
+const deleteToTeamRequest = async (requestId: number) => {
+  try {
+    await instance.delete(`team-request/${requestId}`)
+    toast.success('Заявка на вступление в команду удалена')
+    toTeamRequests.value = toTeamRequests.value.filter(r => r.id !== requestId)
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
+const deleteToProjectRequest = async (requestId: number) => {
+  try {
+    await instance.delete(`project-request/${requestId}`)
+    toast.success('Заявка на назначение проекта удалена')
+    toProjectRequests.value = toProjectRequests.value.filter(r => r.id !== requestId)
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
 
 onMounted(async () => {
     createTeamRequests.value = (await instance.get('create-team-request/my/all')).data

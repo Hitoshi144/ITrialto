@@ -42,4 +42,10 @@ export class TeamRequestController {
   ) {
     return await this.teamRequestService.updateRequestStatus(+id, updateTeamRequestDto);
   }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  async deleteRequest(@Param('id') id: number) {
+    return await this.teamRequestService.deleteRequestByRequestId(+id)
+  }
 }

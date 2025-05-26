@@ -104,7 +104,7 @@
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
-        <div v-for="project in pendingProjects" :key="project.id">
+        <div v-for="project in pendingProjects" :key="project.id" :id="`request-${project.id}`">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -901,6 +901,15 @@
   border-radius: 10px;
 }
 
+.highlight {
+  animation: highlight 3s ease;
+}
+
+@keyframes highlight {
+  0% { background-color: rgba(65, 120, 156, 0.2); }
+  100% { background-color: transparent; }
+}
+
 @media screen and (max-width: 800px) {
   .projects-header {
     flex-direction: column;
@@ -932,7 +941,7 @@
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
 import type { IProjects, IRialto, ITeam, IToProjectRequest, IUser } from 'src/types/types';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { languages, devops, databases, frameworks } from '../types/technologies'
 import { toast } from 'vue3-toastify';
 import { QStepper } from 'quasar';
@@ -1158,6 +1167,29 @@ id?: number) => {
     }
 }
 
+const scrollToRequest = async () => {
+  if (route.hash) {
+    try {
+      await nextTick();
+      const element = document.querySelector(route.hash);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+          element.classList.add('highlight');
+          setTimeout(() => {
+            element.classList.remove('highlight');
+          }, 2000);
+        }, 300);
+      }
+    } catch (error) {
+      console.error('Error during scroll to request:', error);
+    }
+  }
+};
+
 const requestWord = (count: number | undefined) => {
   if (count === undefined) {
     return 'заявок'
@@ -1320,6 +1352,10 @@ watch(() => route.query.tab, (newTab) => {
   }
 })
 
+watch(() => route.hash, async () => {
+  await scrollToRequest()
+})
+
 onMounted(async () => {
     myProjects.value = (await instance.get('project/my')).data
     rialtos.value = (await instance.get('rialto')).data
@@ -1394,5 +1430,7 @@ onMounted(async () => {
 
 
     clearStack()
+
+    await scrollToRequest()
 })
 </script>

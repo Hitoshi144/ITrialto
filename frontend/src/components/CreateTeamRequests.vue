@@ -1,11 +1,11 @@
 <template>
 <div>
     <p class="i-member-teams-title">Заявок на рассмотрении: {{ createTeamRequests.length }}</p>
-        <div v-for="request in createTeamRequests" :key="request.id">
+        <div v-for="request in createTeamRequests" :key="request.id" :id="`request-${request.id}`">
           <q-separator />
           <p class="team-description" style="margin-top: 20px;"><strong>Название:</strong> {{ request.title }}</p>
           <p class="team-description" style="margin-top: 15px;"><strong>Описание:</strong> {{ request.description }}</p>
-          <q-btn outline label="удалить заявку" style="border-radius: 10px; margin-top: 15px; display: flex; justify-self: flex-end;" color="primary" icon="delete_forever" @click="isOpen = true" />
+          <q-btn outline label="удалить заявку" style="border-radius: 10px; margin-top: 15px; display: flex; justify-self: flex-end; margin-bottom: 20px;" color="primary" icon="delete_forever" @click="isOpen = true" />
           <q-dialog v-model="isOpen" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
             <q-card flat bordered class="team-edit-card" style="border-radius: 15px;">
               <q-card-section>
@@ -50,14 +50,26 @@
 .team-edit-card {
     width: 75vw;
 }
+
+.highlight {
+  animation: highlight 3s ease;
+}
+
+@keyframes highlight {
+  0% { background-color: rgba(65, 120, 156, 0.2); }
+  100% { background-color: transparent; }
+}
 </style>
 
 <script lang="ts" setup>
   /* eslint-disable @typescript-eslint/no-explicit-any */
+import { nextTick } from 'process';
 import { useCreateTeamRequestsStore } from 'src/store/create-team-request';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { toast } from 'vue3-toastify';
 
+const route = useRoute()
 
 const createTeamRequestsStore = useCreateTeamRequestsStore()
 
@@ -73,6 +85,26 @@ const deleteCreateTeamReq = async (requestId: number) => {
   }
  }
 
+ const scrollToRequest = () => {
+  if (route.hash) {
+    nextTick(() => {
+      const element = document.querySelector(route.hash)
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          element.classList.add('highlight')
+          setTimeout(() => {
+            element.classList.remove('highlight')
+          }, 2000)
+        }, 300)
+      }
+    })
+  }
+ }
+
  const props = defineProps<{
   isDeleteDialogOpen: boolean
 }>();
@@ -85,8 +117,13 @@ const isOpen = computed({
   set: (value) => emit('update:isDeleteDialogOpen', value)
 });
 
+watch(() => route.hash, () => {
+  scrollToRequest()
+})
+
  onMounted(async () => {
     await createTeamRequestsStore.fetchRequests()
+    scrollToRequest()
  })
 
 </script>

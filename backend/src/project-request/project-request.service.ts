@@ -162,4 +162,19 @@ export class ProjectRequestService {
       order: { createdAt: 'DESC' }
     });
   }
+
+  async deleteToProjectRequest(requestId: number) {
+    try {
+      const request = await this.projectRequestRepository.findOne({where: {id: requestId}})
+
+      if (!request) {
+        throw new BadRequestException('Заявка не найдена')
+      }
+
+      return await this.projectRequestRepository.remove(request)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
 }
