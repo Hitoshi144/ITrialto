@@ -11,6 +11,7 @@ import { CreateTeamRequestModule } from './create-team-request/create-team-reque
 import { ProjectModule } from './project/project.module';
 import { ProjectRequestModule } from './project-request/project-request.module';
 import { RialtoModule } from './rialto/rialto.module';
+import { SocketService } from './socket/socket.service';
 
 @Module({
   imports: [UserModule, AuthModule, ConfigModule.forRoot(),
@@ -37,6 +38,6 @@ import { RialtoModule } from './rialto/rialto.module';
     RialtoModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SocketService],
 })
 export class AppModule {}

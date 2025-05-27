@@ -125,3 +125,15 @@ export interface IToProjectRequest {
     status: string
     createdAt: string
 }
+
+export interface INotification {
+    id: string
+    type: 'message' | 'system' | 'alert'
+    message: string
+    timestamp: string
+}
+
+export interface SocketError {
+    message: string
+    code?: number
+}

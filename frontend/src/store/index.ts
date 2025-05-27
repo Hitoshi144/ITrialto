@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia';
 import { instance } from 'src/api/axios.api';
 import type { IUser } from 'src/types/types';
+import { useSocketStore } from './socket.store';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -15,6 +16,8 @@ export const useUserStore = defineStore('user', {
     },
     logout() {
       console.log('User вышел')
+      const socketStore = useSocketStore()
+      socketStore.disconnectSocket()
       this.user = null;
       this.isAuth = false;
       localStorage.removeItem('token')
@@ -28,15 +31,18 @@ export const useUserStore = defineStore('user', {
 
     async checkAuth() {
       const token = localStorage.getItem('token')
+      const socketStore = useSocketStore()
 
       if (token) {
         try {
           const response = await instance.get('/auth/profile')
           this.login(response.data)
+          socketStore.initSocket()
         }
         catch (error: any) {
           if (error.response?.status === 401) { 
             this.logout() 
+            socketStore.disconnectSocket()
           }
         }
       }
