@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { TeamsController } from './teams.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,11 +10,15 @@ import { User } from 'src/user/entities/user.entity';
 import { TeamRequestService } from 'src/team-request/team-request.service';
 import { TeamRequestModule } from 'src/team-request/team-request.module';
 import { TeamRequest } from 'src/team-request/entities/team-request.entity';
+import { NotificationsModule } from 'src/notifications/notifications.module';
+import { SocketModule } from 'src/socket/socket.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Team, User, TeamRequest]),
-    TeamRequestModule,
+    forwardRef(() => TeamRequestModule),
+    forwardRef(() => NotificationsModule),
+    forwardRef(() => SocketModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

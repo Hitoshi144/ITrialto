@@ -6,13 +6,17 @@ import { TeamRequest } from './entities/team-request.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { Team } from 'src/teams/entities/team.entity';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { SocketService } from 'src/socket/socket.service';
 
 @Injectable()
 export class TeamRequestService {
   constructor(
     @InjectRepository(TeamRequest) private readonly teamRequestRepository: Repository<TeamRequest>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    @InjectRepository(Team) private readonly teamRepository: Repository<Team> 
+    @InjectRepository(Team) private readonly teamRepository: Repository<Team>,
+    private readonly notificationsService: NotificationsService,
+    private readonly socketService: SocketService,
    ) {}
 
   async create(createTeamRequestDto: CreateTeamRequestDto) {
@@ -45,7 +49,17 @@ export class TeamRequestService {
       status: 'pending',
     });
 
-    return await this.teamRequestRepository.save(teamRequest);
+    const request = await this.teamRequestRepository.save(teamRequest);
+
+    await this.notificationsService.createAndNotify({
+      type: 'teamJoinRequest',
+      message: `Пользователь ${user.firstname} ${user.lastname}  хочет вступить в команду ${team.title}`,
+      fromUserId: userId,
+      toUserId: team.teamLeaderId,
+      teamId: teamId
+    })
+
+    return request
   }
 
   async getRequestsForLeader(teamLeaderId: number) {

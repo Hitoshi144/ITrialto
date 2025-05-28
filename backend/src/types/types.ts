@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { Socket } from 'socket.io'
 
 export interface IUser {
     id: number
@@ -31,3 +32,7 @@ export interface RequestWithUser extends Request {
       lastname?: string;
     };
   }
+
+export interface AuthenticatedSocket extends Socket {
+  user?: any;
+}

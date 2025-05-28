@@ -1,5 +1,7 @@
 // src/api/socket.api.ts
 import { io, type Socket } from 'socket.io-client';
+import type { INotification } from 'src/types/types';
+import { instance } from './axios.api';
 
 class SocketAPI {
   private socket: Socket | null = null;
@@ -15,6 +17,10 @@ class SocketAPI {
 
   public setToken(token: string): void {
     this.token = token;
+    if (this.socket?.connected) {
+      this.disconnect();
+      this.connect();
+    }
   }
 
   public connect(): void {
@@ -23,15 +29,19 @@ class SocketAPI {
       console.error('No JWT token available');
       return;
     }
-
-    this.socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:3001', {
-      auth: {
-        token: `Bearer ${this.token}`,
+  
+    this.socket = io('http://localhost:3001/ws', { // Убрали /ws из URL
+      auth: { 
+        token: this.token 
       },
-      reconnection: true,
+      transports: ['websocket'],
+      path: '/ws/socket.io', // Путь должен совпадать с сервером
+      withCredentials: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      transports: ['websocket'],
+      extraHeaders: {
+        Authorization: `Bearer ${this.token}` // Для совместимости
+      }
     });
 
     this.setupEventListeners();
@@ -41,15 +51,15 @@ class SocketAPI {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected, ID:', this.socket?.id);
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    this.socket.on('disconnect', (reason) => {
+      console.log('WebSocket disconnected:', reason);
     });
 
-    this.socket.on('connect_error', (err: Error) => {
-      console.error('WebSocket connection error:', err.message);
+    this.socket.on('connect_error', (err) => {
+      console.error('Connection error:', err.message);
     });
   }
 
@@ -74,6 +84,16 @@ class SocketAPI {
 
   public emit(event: string, data?: unknown): void {
     this.socket?.emit(event, data);
+  }
+
+  public isConnected(): boolean {
+    return this.socket?.connected || false;
+  }
+
+  public async fetchNotifications(): Promise<INotification[]> {
+    const response = await instance.get('notifications')
+
+    return response.data
   }
 }
 

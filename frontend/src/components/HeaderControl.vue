@@ -22,7 +22,37 @@
     </transition>
 	</div>
       </nav>
-      <q-btn flat class="bg-accent" rounded>
+
+      <div class="notif-profile">
+      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="notifications" @click="notificationsMenu = true">
+        <q-badge color="primary" class="notif-count" floating>{{ notifications.length }}</q-badge>
+      </q-btn>
+      <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[0, 5]">
+        <q-list class="bg-secondary notifications-menu">
+          
+          <q-item v-for="notification in notifications" :key="notification.id">
+          <div class="notification-tale">
+
+          <div v-if="notification.type === 'teamJoinRequest'" class="notification-data">
+            <q-icon name="person_add" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Пользователь <span>{{ notification.fromUser.firstname }} {{ notification.fromUser.lastname }}</span> хочет вступить в команду <span>{{ notification.team.title }}</span></p>
+          </div>
+
+          <div style="display: flex; flex-direction: row; justify-content: space-between;">
+          <p class="notification-date">{{ sharedDateInterpretation(notification.timestamp.toString()) }}</p>
+          <p class="goTo" @click="notificationRedirect(notification)">Перейти</p>
+          </div>
+          <q-separator color="primary" />
+
+          </div>
+
+
+          </q-item>
+
+        </q-list>
+        </q-menu>
+
+      <q-btn flat class="bg-accent" style="border-radius: 10px;" rounded>
       <div class="profile_logo">
         <img v-if="avatarUrl != null"
         :src="avatarUrl"
@@ -63,6 +93,7 @@
         </q-list>
       </q-menu>
       </q-btn>
+      </div>
     </div>
   </template>
   
@@ -281,6 +312,75 @@ input[id="radio-3"] {
 	transition: 0.25s ease-out;
 }
 
+.notifications-btn {
+  width: 60px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.notif-profile {
+  display: flex;
+  overflow: hidden;
+  flex-wrap: nowrap
+}
+
+.notif-count {
+  margin-right: 10px;
+  margin-top: 10px;
+}
+
+.notifications-menu {
+  width: 40vw;
+  max-width: 600px;
+  min-width: 300px;
+}
+
+.notification-tale {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-data {
+  display: flex;
+  flex-direction: row;
+}
+
+.notification-icon {
+  margin-right: 10px;
+  display: flex;
+}
+
+.notification-text {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 15px;
+  color: #223c4d;
+
+  span {
+    color:#41789c;
+    font-weight: 500;
+  }
+}
+
+.notification-date {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: rgba(34, 60, 77, 0.7);
+}
+
+.goTo {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin-right: 20px;
+  font-size: 15px;
+  color: #223c4d;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: border-bottom-color 0.3s ease;
+}
+
+.goTo:hover {
+  border-bottom-color: #223c4d; /* Цвет underline такой же, как и текст */
+}
+
 @media (max-width: 817px) {
 	.tabs {
 		transform: scale(0.8);
@@ -301,6 +401,7 @@ input[id="radio-3"] {
   </style>
   
   <script setup lang="ts">
+  /* eslint-disable @typescript-eslint/no-explicit-any */
 import { removeTokenFromLocalStorage } from 'src/helpers/localstorage.helper';
 import { AuthService } from 'src/services/auth.service';
 import { useUserStore } from 'src/store';
@@ -308,11 +409,20 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import avatarAlt from '../assets/avatar_alt.png'; // Добавьте этот импорт
 import logoutImg from '../assets/logout.png'; // Добавьте этот импорт
+import { useSocketStore } from 'src/store/socket.store';
+import { sharedDateInterpretation } from 'src/services/interpritation.service';
+import type { INotification } from 'src/types/types';
+import { toast } from 'vue3-toastify';
 
   const userStore = useUserStore()
 
+  const socketStore = useSocketStore()
+
   const router = useRouter()
   const route = useRoute()
+
+  const notifications = computed(() => socketStore.notifications)
+  const notificationsMenu = ref<boolean>(false)
 
   const isHeaderRoute = computed( () => route.name === 'projects' || route.name === 'teams-registry' || route.name === 'team-detail')
   
@@ -336,6 +446,19 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
     userStore.logout()
     removeTokenFromLocalStorage('token')
     await router.push({name: 'auth'})
+  }
+
+  const notificationRedirect = async (notification: INotification) => {
+    try {
+      switch (notification.type) {
+        case 'teamJoinRequest':
+          await router.push({name: 'i-teamleader', hash: `#team-${notification.teamId}`})
+      }
+    }
+    catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+    }
   }
 
   onMounted(async () => {

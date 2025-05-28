@@ -127,10 +127,19 @@ export interface IToProjectRequest {
 }
 
 export interface INotification {
-    id: string
-    type: 'message' | 'system' | 'alert'
+    id: number
+    type: 'message' | 'system' | 'alert' | 'teamJoinRequest'
     message: string
-    timestamp: string
+    timestamp: Date
+    fromUserId?: number
+    fromUser: IUser
+    toUserId: number
+    toUser: IUser
+    teamId?: number
+    team: ITeam
+    projectId?: number
+    project: IProjects
+    isRead: boolean
 }
 
 export interface SocketError {

@@ -12,6 +12,10 @@ import { ProjectModule } from './project/project.module';
 import { ProjectRequestModule } from './project-request/project-request.module';
 import { RialtoModule } from './rialto/rialto.module';
 import { SocketService } from './socket/socket.service';
+import { NotificationsModule } from './notifications/notifications.module';
+import { NotificationsService } from './notifications/notifications.service';
+import { SocketModule } from './socket/socket.module';
+import { WsJwtGuard } from './auth/guards/ws-jwt.guard';
 
 @Module({
   imports: [UserModule, AuthModule, ConfigModule.forRoot(),
@@ -32,12 +36,14 @@ import { SocketService } from './socket/socket.service';
     }),
     TeamsModule,
     TeamRequestModule,
-    CreateTeamRequestModule,
     ProjectModule,
+    NotificationsModule,
+    SocketModule,
+    CreateTeamRequestModule,
     ProjectRequestModule,
     RialtoModule,
   ],
   controllers: [AppController],
-  providers: [AppService, SocketService],
+  providers: [AppService, WsJwtGuard],
 })
 export class AppModule {}

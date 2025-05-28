@@ -1,5 +1,5 @@
 // src/socket/socket.service.ts
-import { Logger, UseGuards } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Logger, UseGuards } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -9,6 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { JwtService } from '@nestjs/jwt';
 
 interface AuthenticatedSocket extends Socket {
   user?: {
@@ -18,48 +20,53 @@ interface AuthenticatedSocket extends Socket {
 }
 
 @WebSocketGateway({
-  namespace: '/ws', // опциональное пространство имен
+  namespace: '/ws', // Пространство имён
+  path: '/ws/socket.io', // Должен совпадать с клиентом
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:9000',
     credentials: true,
   },
-  transports: ['websocket'], // используем только WebSocket (без polling)
+  transports: ['websocket'], // Только WebSocket (без HTTP polling)
 })
 export class SocketService implements OnGatewayConnection, OnGatewayDisconnect {
+  constructor(
+    @Inject(forwardRef(() => NotificationsService))
+    private readonly notificationService: NotificationsService,
+    private readonly jwtService: JwtService,
+  ) {}
+
   @WebSocketServer()
   server: Server;
   private readonly logger = new Logger(SocketService.name);
-  private readonly clients = new Map<number, AuthenticatedSocket>();
+  private readonly clients = new Map<number, Socket>();
 
-  @UseGuards(WsJwtGuard)
+  private static instance: SocketService;
+
+  public static getInstance(): SocketService {
+    return SocketService.instance;
+  }
+
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      if (!client.user?.id) {
-        throw new Error('User ID not found in JWT');
-      }
-
-      const userId = client.user.id;
+      const token = client.handshake.auth?.token;
+      if (!token) throw new Error('No token');
+  
+      const payload = await this.jwtService.verifyAsync(token);
+      client.user = payload;
+  
+      const userId = payload.id ?? payload.sub;
+      if (!userId) throw new Error('User ID not found in JWT');
+  
       this.clients.set(userId, client);
-      this.logger.log(`User ${userId} connected`);
-
-      // Отправляем подтверждение подключения
-      client.emit('connectionSuccess', { 
-        status: 'connected',
-        userId,
-        timestamp: new Date().toISOString()
+  
+      client.emit('connection_success', { userId });
+  
+      client.on('disconnect', () => {
+        this.clients.delete(userId);
       });
-
-      // Обработка ошибок для конкретного клиента
-      client.on('error', (err) => {
-        this.logger.error(`Client error (user ${userId}): ${err.message}`);
-      });
-
     } catch (error) {
       this.logger.error(`Connection error: ${error.message}`);
-      client.emit('connectionError', { 
-        error: 'Authentication failed',
-        message: error.message
-      });
+      client.emit('connection_error', { error: error.message });
       client.disconnect();
     }
   }
@@ -68,7 +75,6 @@ export class SocketService implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = client.user?.id;
     if (userId) {
       this.clients.delete(userId);
-      this.logger.log(`User ${userId} disconnected`);
     }
   }
 
@@ -80,7 +86,8 @@ export class SocketService implements OnGatewayConnection, OnGatewayDisconnect {
    */
   public sendToUser(userId: number, event: string, data: any): boolean {
     const client = this.clients.get(userId);
-    if (!client) {
+    
+    if (!client || client.disconnected) {
       this.logger.warn(`User ${userId} not connected`);
       return false;
     }
@@ -92,7 +99,7 @@ export class SocketService implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`Failed to send to user ${userId}: ${error.message}`);
       return false;
     }
-  }
+}
 
   /**
    * Широковещательная рассылка всем подключенным клиентам
@@ -116,5 +123,46 @@ export class SocketService implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       timestamp: new Date().toISOString()
     };
+  }
+
+  @UseGuards(WsJwtGuard)
+  @SubscribeMessage('teamJoinRequest')
+  async handleTeamJoinRequest(client: AuthenticatedSocket, payload: { teamId: number, targetUserId: number }) {
+    const userId = client.user?.id
+    this.logger.log(`User ${userId} requests to join team ${payload.teamId}, notifying user ${payload.targetUserId}`)
+
+    const notification = await this.notificationService.create({
+      type: 'teamJoinRequest',
+      message: `Пользователь ${userId} хочет присоедениться к команде ${payload.teamId}`,
+      fromUserId: userId,
+      toUserId: payload.targetUserId,
+      teamId: payload.teamId,
+      isRead: false,
+      timestamp: new Date()
+    })
+
+    if (!notification) {
+      throw new BadRequestException('Ошибка создания уведомления')
+    }
+
+    this.sendToUser(payload.targetUserId, 'newTeamJoinRequest', {
+      id: notification.id,
+      type: notification.type,
+      message: notification.message,
+      teamId: notification.teamId,
+      team: notification.team,
+      fromUserId: notification.fromUserId,
+      fromUser: notification.fromUser,
+      toUserId: notification.toUserId,
+      toUser: notification.toUser,
+      projectId: notification.projectId,
+      project: notification.project,
+      timestamp: notification.timestamp.toISOString()
+    })
+
+    return {
+      status: 'requestSent',
+      timestamp: new Date().toISOString()
+    }
   }
 }

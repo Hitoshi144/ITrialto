@@ -2,20 +2,31 @@
 import { defineStore } from 'pinia';
 import { socketAPI } from 'src/api/socket.api';
 import { useUserStore } from '../store/index';
+import type { INotification } from 'src/types/types';
+import { generateId } from 'src/helpers/generate.helper';
+  /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const useSocketStore = defineStore('socket', {
   state: () => ({
     isConnected: false,
-    notifications: [] as Notification[],
+    notifications: [] as INotification[],
   }),
   
   actions: {
-    initSocket() {
+    async initSocket() {
       const token = localStorage.getItem('token');
       
       if (!token) {
         console.error('No token available');
         return;
+      }
+
+      try {
+        const storedNotifications = await socketAPI.fetchNotifications()
+        this.notifications = storedNotifications
+      }
+      catch (error: any) {
+        console.error('Не удалось загрузить уведомления: ', error)
       }
       
       socketAPI.setToken(token)
@@ -24,8 +35,21 @@ export const useSocketStore = defineStore('socket', {
       // Используем стрелочные функции для сохранения контекста
       socketAPI.subscribe('connect', () => this.handleConnect());
       socketAPI.subscribe('disconnect', () => this.handleDisconnect());
-      socketAPI.subscribe('notification', (data: Notification) => this.handleNotification(data));
+      socketAPI.subscribe('notification', (data: INotification) => this.handleNotification(data));
       socketAPI.subscribe('exception', (error: Error) => this.handleException(error));
+      socketAPI.subscribe('newTeamJoinRequest', (notification: INotification) => {
+        console.log('Получено уведомление о заявке: ', notification)
+
+        if (!notification.id) {
+          notification.id = generateId()
+        }
+
+        if (notification.timestamp && !(typeof notification.timestamp === 'string')) {
+          notification.timestamp = new Date(notification.timestamp);
+        }
+
+        this.addNotification(notification)
+      })
     },
     
     handleConnect() {
@@ -38,7 +62,7 @@ export const useSocketStore = defineStore('socket', {
       console.log('Socket disconnected');
     },
     
-    handleNotification(data: Notification) {
+    handleNotification(data: INotification) {
       this.notifications.push(data);
       console.log('New notification:', data);
     },
@@ -56,6 +80,7 @@ export const useSocketStore = defineStore('socket', {
       socketAPI.unsubscribe('disconnect');
       socketAPI.unsubscribe('notification');
       socketAPI.unsubscribe('exception');
+      socketAPI.unsubscribe('newTeamJoinRequest')
       socketAPI.disconnect();
       this.isConnected = false;
     },
@@ -64,6 +89,10 @@ export const useSocketStore = defineStore('socket', {
       if (this.isConnected) {
         socketAPI.emit(event, data);
       }
+    },
+
+    addNotification(notification: INotification) {
+      this.notifications.push(notification)
     }
   }
 });

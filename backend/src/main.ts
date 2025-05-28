@@ -1,16 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Настройка CORS для HTTP и WebSocket
   app.enableCors({
-    origin: 'http://localhost:9000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Разрешенные методы
-    allowedHeaders: 'Content-Type, Authorization', // Разрешенные заголовки
-    credentials: true, // Разрешить отправку к
-  })
+    origin: process.env.FRONTEND_URL || 'http://localhost:9000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  });
 
-  await app.listen(process.env.PORT ?? 3001);
+  // Настройка Socket.IO
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  await app.listen(3001);
 }
+
 bootstrap();

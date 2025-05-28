@@ -9,6 +9,12 @@ export const dateInterpretation = (date: string) => {
   return `${pad(tempCreatedAt.getDate())}.${pad(tempCreatedAt.getMonth() + 1)}.${tempCreatedAt.getFullYear()}`;
 };
 
+export const sharedDateInterpretation = (date: string) => {
+  const tempCreatedAt = new Date(date);
+  const pad = (num: number) => num.toString().padStart(2, '0');
+  return `${pad(tempCreatedAt.getDate())}.${pad(tempCreatedAt.getMonth() + 1)}.${tempCreatedAt.getFullYear()} ${pad(tempCreatedAt.getHours())}:${pad(tempCreatedAt.getMinutes())}`;
+};
+
 export const requestWordInterpretation = (requestsCount: number) =>{
     if (requestsCount === 1) {
       return 'заявка'

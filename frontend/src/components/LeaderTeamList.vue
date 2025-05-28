@@ -27,7 +27,7 @@
               </q-card>
             </q-dialog>
 
-            <div v-for="team in teamsByLeaderId" :key="team.id">
+            <div v-for="team in teamsByLeaderId" :key="team.id" :id="`team-${team.id}`">
                 <q-separator />
                 <div class="teams-header" style="align-items: center;">
                 <p class="team-title">{{ team.title }}</p>
@@ -314,6 +314,15 @@
     justify-content: space-between;
 }
 
+.highlight {
+  animation: highlight 3s ease;
+}
+
+@keyframes highlight {
+  0% { background-color: rgba(65, 120, 156, 0.2); }
+  100% { background-color: transparent; }
+}
+
 @media screen and (max-width: 700px) {
   .team-info {
       flex-direction: column;
@@ -338,15 +347,16 @@
   /* eslint-disable @typescript-eslint/no-explicit-any */
 import { instance } from 'src/api/axios.api';
 import type { IProjects, ITeam, ITeamRequests, IUser } from 'src/types/types';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { toast } from 'vue3-toastify';
 import { requestWordInterpretation, dateInterpretation, privacyInterpretation } from 'src/services/interpritation.service';
 import { useUserStore } from 'src/store';
 import { AuthService } from 'src/services/auth.service';
 import { TeamService } from 'src/services/team.service';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const router = useRouter()
+const route = useRoute()
 
 const user = useUserStore().getUser
 
@@ -578,6 +588,30 @@ const isDeleting = computed({
   set: (value) => emit('update:isTeamDeleteDialogOpen', value)
 });
 
+const scrollToRequest = async () => {
+  if (route.hash) {
+    await nextTick(() => {
+      const element = document.querySelector(route.hash)
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          element.classList.add('highlight')
+          setTimeout(() => {
+            element.classList.remove('highlight')
+          }, 2000)
+        }, 300)
+      }
+    })
+  }
+ }
+
+ watch(() => route.hash, async () => {
+  await scrollToRequest()
+})
+
 onMounted(async () => {
     teamsByLeaderId.value = (await instance.get('teams')).data
      requestsToTeam.value = (await instance.get('team-request/leader')).data
@@ -600,6 +634,9 @@ onMounted(async () => {
      }
      
   )
+
+  await scrollToRequest()
+
 })
 
 onUnmounted(() => {
