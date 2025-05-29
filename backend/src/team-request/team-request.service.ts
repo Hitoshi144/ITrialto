@@ -76,7 +76,7 @@ export class TeamRequestService {
         where: { id },
         relations: ['user', 'team', 'team.teamMembers'], // Изменили relations
     });
-  
+
     if (!teamRequest) {
         throw new NotFoundException(`Request with id ${id} not found`);
     }
@@ -93,6 +93,24 @@ export class TeamRequestService {
     if (status === 'approved') {
         const team = teamRequest.team;
         const user = teamRequest.user;
+
+        await this.notificationsService.createAndNotify({
+          type: 'approvedTeamJoin',
+          message: `Заявка на вступление в команду ${team.title} одобрена.`,
+          fromUserId: team.teamLeaderId,
+          toUserId: user.id,
+          teamId: team.id
+        })
+
+        team.members.forEach(async member => {
+          await this.notificationsService.createAndNotify({
+            type: 'userJoinedToTeam',
+            message: `${user.firstname} ${user.lastname} присоеденился к команде ${team.title}`,
+            fromUserId: user.id,
+            toUserId: member,
+            teamId: team.id
+          })
+        })
   
         if (!team.teamMembers.some(member => member.id === user.id)) {
             if (!team.teamMembers) {
@@ -102,6 +120,16 @@ export class TeamRequestService {
             team.members.push(user.id)
             await this.teamRepository.save(team);
         }
+    }
+
+    if (status === 'rejected') {
+      await this.notificationsService.createAndNotify({
+        type: 'rejectedTeamJoin',
+        message: `Заявка на вступление в команду ${teamRequest.team.title} отклонена.`,
+        fromUserId: teamRequest.team.teamLeaderId,
+        toUserId: teamRequest.userId,
+        teamId: teamRequest.teamId
+      })
     }
   
     return teamRequest;

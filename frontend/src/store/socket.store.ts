@@ -38,7 +38,6 @@ export const useSocketStore = defineStore('socket', {
       socketAPI.subscribe('notification', (data: INotification) => this.handleNotification(data));
       socketAPI.subscribe('exception', (error: Error) => this.handleException(error));
       socketAPI.subscribe('newTeamJoinRequest', (notification: INotification) => {
-        console.log('Получено уведомление о заявке: ', notification)
 
         if (!notification.id) {
           notification.id = generateId()
@@ -63,7 +62,7 @@ export const useSocketStore = defineStore('socket', {
     },
     
     handleNotification(data: INotification) {
-      this.notifications.push(data);
+      this.notifications.unshift(data);
       console.log('New notification:', data);
     },
     
@@ -84,6 +83,13 @@ export const useSocketStore = defineStore('socket', {
       socketAPI.disconnect();
       this.isConnected = false;
     },
+
+    markNotificationAsRead(id: number) {
+      const notification = this.notifications.find(n => n.id === id);
+      if (notification) {
+        notification.isRead = true;
+      }
+    },
     
     sendMessage(event: string, data: unknown) {
       if (this.isConnected) {
@@ -92,7 +98,7 @@ export const useSocketStore = defineStore('socket', {
     },
 
     addNotification(notification: INotification) {
-      this.notifications.push(notification)
+      this.notifications.unshift(notification)
     }
   }
 });

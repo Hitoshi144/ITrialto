@@ -1,7 +1,7 @@
 <template>
     <div>
         <p class="i-member-teams-title">Команд: {{ teamsByMemberId.length }}</p>
-            <div v-for="team in teamsByMemberId" :key="team.id">
+            <div v-for="team in teamsByMemberId" :key="team.id" :id="`team-${team.id}`">
                 <q-separator />
                 <div>
                 <p class="team-title">{{ team.title }}</p>
@@ -146,6 +146,15 @@
     background-color: #41789C;
 }
 
+.highlight {
+  animation: highlight 3s ease;
+}
+
+@keyframes highlight {
+  0% { background-color: rgba(65, 120, 156, 0.2); }
+  100% { background-color: transparent; }
+}
+
 @media screen and (max-width: 700px) {
   .team-info {
       flex-direction: column;
@@ -165,14 +174,17 @@
 <script lang="ts" setup>
 import { instance } from 'src/api/axios.api';
 import type { ITeam, IUser } from 'src/types/types';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { dateInterpretation, privacyInterpretation } from 'src/services/interpritation.service';
 import { AuthService } from 'src/services/auth.service';
 import { TeamService } from 'src/services/team.service';
 import { useUserStore } from 'src/store';
+import { useRoute } from 'vue-router';
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
+
+const route = useRoute()
 
 const teamsByMemberId = ref<ITeam[]>([])
 
@@ -225,6 +237,30 @@ const loadAvatar = async (userId: number): Promise<void> => {
   }
 };
 
+const scrollToTeam = async () => {
+  if (route.hash) {
+    await nextTick(() => {
+      const element = document.querySelector(route.hash)
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          element.classList.add('highlight')
+          setTimeout(() => {
+            element.classList.remove('highlight')
+          }, 2000)
+        }, 300)
+      }
+    })
+  }
+ }
+
+ watch(() => route.hash, async () => {
+  await scrollToTeam()
+})
+
 onMounted(async () => {
     teamsByMemberId.value = (await instance.get(`teams/member/${user.value?.id}`)).data
 
@@ -240,6 +276,8 @@ onMounted(async () => {
           teamStacks.value[team.id] = await TeamService.loadStack(team.id)
       })
     )
+
+    await scrollToTeam()
 
 })
 </script>

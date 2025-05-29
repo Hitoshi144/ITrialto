@@ -37,7 +37,7 @@ export const useUserStore = defineStore('user', {
         try {
           const response = await instance.get('/auth/profile')
           this.login(response.data)
-          socketStore.initSocket()
+          await socketStore.initSocket()
         }
         catch (error: any) {
           if (error.response?.status === 401) { 

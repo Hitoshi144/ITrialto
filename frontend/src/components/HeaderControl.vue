@@ -24,13 +24,13 @@
       </nav>
 
       <div class="notif-profile">
-      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="notifications" @click="notificationsMenu = true">
+      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="notifications" @click="notificationsMenu = true; onMenuShow()">
         <q-badge color="primary" class="notif-count" floating>{{ notifications.length }}</q-badge>
       </q-btn>
       <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[0, 5]">
         <q-list class="bg-secondary notifications-menu">
           
-          <q-item v-for="notification in notifications" :key="notification.id">
+          <q-item v-for="notification in notifications" :key="notification.id" :class="{'notification-unread': !notification.isRead, 'notification-read': notification.isRead}">
           <div class="notification-tale">
 
           <div v-if="notification.type === 'teamJoinRequest'" class="notification-data">
@@ -38,9 +38,39 @@
             <p class="notification-text">Пользователь <span>{{ notification.fromUser.firstname }} {{ notification.fromUser.lastname }}</span> хочет вступить в команду <span>{{ notification.team.title }}</span></p>
           </div>
 
+          <div v-if="notification.type === 'userJoinedToTeam'" class="notification-data">
+            <q-icon name="group_add" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text"><span>{{ notification.fromUser.firstname }} {{ notification.fromUser.lastname }}</span> присоеденился к команде <span>{{ notification.team.title }}.</span></p>
+          </div>
+
+          <div v-if="notification.type === 'approvedTeamJoin'" class="notification-data">
+            <q-icon name="how_to_reg" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Заявка на вступление в команду <span>{{ notification.team.title }}</span> одобрена.</p>
+          </div>
+
+          <div v-if="notification.type === 'rejectedTeamJoin'" class="notification-data">
+            <q-icon name="sentiment_dissatisfied" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Заявка на вступление в команду <span>{{ notification.team.title }}</span> отклонена</p>
+          </div>
+
+          <div v-if="notification.type === 'teamMemberRemoved'" class="notification-data">
+            <q-icon name="person_remove" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Вас исключили из команды <span>{{ notification.team.title }}.</span></p>
+          </div>
+
+          <div v-if="notification.type === 'createTeamApproved'" class="notification-data">
+            <q-icon name="diversity_3" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Создание команды <span>{{ notification.team.title }}</span> одобрено.</p>
+          </div>
+
+          <div v-if="notification.type === 'createTeamRejected'" class="notification-data">
+            <q-icon name="group_remove" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Создание команды <span>{{ notification.message }}</span> отклонено.</p>
+          </div>
+
           <div style="display: flex; flex-direction: row; justify-content: space-between;">
           <p class="notification-date">{{ sharedDateInterpretation(notification.timestamp.toString()) }}</p>
-          <p class="goTo" @click="notificationRedirect(notification)">Перейти</p>
+          <p v-if="typeVerified(notification.type)" class="goTo" @click="notificationRedirect(notification)">Перейти</p>
           </div>
           <q-separator color="primary" />
 
@@ -381,6 +411,24 @@ input[id="radio-3"] {
   border-bottom-color: #223c4d; /* Цвет underline такой же, как и текст */
 }
 
+.notification-unread {
+  background-color: rgba(65, 120, 156, 0.2);
+  animation: fadeOutBackground 3s forwards;
+}
+
+@keyframes fadeOutBackground {
+  from {
+    background-color: rgba(65, 120, 156, 0.2);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.notification-read {
+  background-color: transparent;
+}
+
 @media (max-width: 817px) {
 	.tabs {
 		transform: scale(0.8);
@@ -413,6 +461,7 @@ import { useSocketStore } from 'src/store/socket.store';
 import { sharedDateInterpretation } from 'src/services/interpritation.service';
 import type { INotification } from 'src/types/types';
 import { toast } from 'vue3-toastify';
+import { instance } from 'src/api/axios.api';
 
   const userStore = useUserStore()
 
@@ -441,6 +490,44 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
     withoutRole: 'Без роли'
   }
 
+  const typeVerified = (type: string) => {
+    switch (type){
+      case 'userJoinedToTeam':
+        return false
+      case 'rejectedTeamJoin':
+        return false
+      case 'teamMemberRemoved':
+        return false
+      case 'createTeamRejected':
+        return false
+      default:
+        return true
+    }
+  }
+
+  const markNotificationAsRead = async (id: number) => {
+    try {
+      await instance.patch(`notifications/${id}/read`);
+    // Используем метод хранилища для обновления состояния
+    socketStore.markNotificationAsRead(id);
+    }
+    catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+    }
+  }
+
+  const onMenuShow = () => {
+  // Через 3 секунды помечаем все как прочитанные
+  setTimeout(() => {
+    const unreadNotifications = notifications.value.filter(n => !n.isRead);
+    unreadNotifications.forEach(notification => {
+      markNotificationAsRead(notification.id).catch(error => {
+        console.error('Ошибка при пометке уведомления как прочитанного:', error);
+      });
+    });
+  }, 3000);
+};
 
   const logoutHandler = async () => {
     userStore.logout()
@@ -453,6 +540,13 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
       switch (notification.type) {
         case 'teamJoinRequest':
           await router.push({name: 'i-teamleader', hash: `#team-${notification.teamId}`})
+          break
+        case 'createTeamApproved':
+          await router.push({name: 'i-teamleader', hash: `#team-${notification.teamId}`})
+          break
+        case 'approvedTeamJoin':
+          await router.push({name: 'i-member', hash: `#team-${notification.teamId}`})
+          break
       }
     }
     catch (error: any) {

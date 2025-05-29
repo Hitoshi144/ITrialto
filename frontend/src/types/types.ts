@@ -128,7 +128,8 @@ export interface IToProjectRequest {
 
 export interface INotification {
     id: number
-    type: 'message' | 'system' | 'alert' | 'teamJoinRequest'
+    type: 'message' | 'system' | 'alert' | 'teamJoinRequest' | 'userJoinedToTeam' | 'approvedTeamJoin' | 'rejectedTeamJoin' | 'teamMemberRemoved' |
+    'createTeamApproved' | 'createTeamRejected'
     message: string
     timestamp: Date
     fromUserId?: number

@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ArrayContains, EntityManager, In, Like, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { TeamRequestService } from 'src/team-request/team-request.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class TeamsService {
@@ -13,6 +14,7 @@ export class TeamsService {
     @InjectRepository(Team) private readonly teamRepository: Repository<Team>,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly teamRequestService: TeamRequestService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createTeamDto: CreateTeamDto) {
@@ -134,6 +136,14 @@ async removeMember(teamId: number, userId: number) {
       team.members = team.members.filter(id => id !== userId);
   }
     await this.teamRepository.save(team);
+
+    await this.notificationsService.createAndNotify({
+      type: 'teamMemberRemoved',
+      message: `Вас исключили из команды ${team.title}.`,
+      fromUserId: team.teamLeaderId,
+      toUserId: userId,
+      teamId: team.id
+    })
 
     return { message: `User with id ${userId} has been removed from team ${teamId}` };
 }

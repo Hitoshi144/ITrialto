@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CreateTeamRequest } from './entities/create-team-request.entity';
 import { User } from 'src/user/entities/user.entity';
 import { TeamsModule } from 'src/teams/teams.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { TeamsModule } from 'src/teams/teams.module';
         signOptions: {expiresIn: '30d'},
       }),
       inject: [ConfigService],
-    })
+    }),
+    NotificationsModule
   ],
   controllers: [CreateTeamRequestController],
   providers: [CreateTeamRequestService],

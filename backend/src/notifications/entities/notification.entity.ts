@@ -9,7 +9,7 @@ export class Notification {
     id: number
 
     @Column()
-    type: 'message' | 'system' | 'alert' | 'teamJoinRequest'
+    type: 'message' | 'system' | 'alert' | 'teamJoinRequest' | 'userJoinedToTeam' | 'approvedTeamJoin' | 'rejectedTeamJoin' | 'teamMemberRemoved' | 'createTeamApproved' | 'createTeamRejected'
 
     @Column()
     message: string
