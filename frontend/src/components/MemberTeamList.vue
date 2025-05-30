@@ -6,6 +6,7 @@
                 <div>
                 <p class="team-title">{{ team.title }}</p>
                 </div>
+                <p v-if="team.currentProjectId" class="working-team" @click="router.push({name: 'projects', params: {projectId: team.currentProjectId, rialtoId: givenProjects.find(project => project.id === team.currentProjectId)?.rialtoId}})"><strong>Занимается проектом: {{ givenProjects.find(project => project.id === team.currentProjectId)?.title }}</strong></p>
                 <div class="team-info">
                     <div class="team-title-panel" style="flex-direction: column; width: 100%;">
                         <p class="team-description"><strong>Описание:</strong></p>
@@ -146,6 +147,25 @@
     background-color: #41789C;
 }
 
+.working-team {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #41789C;
+  font-size: 18px;
+  margin: 0;
+  box-shadow: 0 0 0 1px #41789C;;
+  border-radius: 10px;
+  padding: 5px  ;
+  margin-top: 10px;
+  transition: 0.3s ease;
+  display: inline-block; /* Чтобы border-bottom не растягивался на всю ширину */
+  border-bottom: 1px solid transparent; /* Прозрачное подчёркивание */
+}
+
+.working-team:hover {
+  box-shadow: 0 0 0 3px #41789C;;
+  cursor: pointer;
+}
+
 .highlight {
   animation: highlight 3s ease;
 }
@@ -173,20 +193,23 @@
 
 <script lang="ts" setup>
 import { instance } from 'src/api/axios.api';
-import type { ITeam, IUser } from 'src/types/types';
+import type { IProjects, ITeam, IUser } from 'src/types/types';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { dateInterpretation, privacyInterpretation } from 'src/services/interpritation.service';
 import { AuthService } from 'src/services/auth.service';
 import { TeamService } from 'src/services/team.service';
 import { useUserStore } from 'src/store';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const userStore = useUserStore()
 const user = computed(() => userStore.user)
 
 const route = useRoute()
+const router = useRouter()
 
 const teamsByMemberId = ref<ITeam[]>([])
+
+const givenProjects = ref<IProjects[]>([])
 
 const teamsByMemberIdMembers = ref<Record<string, IUser[]>>({})
 const teamsByMemberIdLeaders = ref<Record<string, IUser>>({})
@@ -274,6 +297,10 @@ onMounted(async () => {
     await Promise.all(
         teamsByMemberId.value.map(async team => {
           teamStacks.value[team.id] = await TeamService.loadStack(team.id)
+
+          if (team.currentProjectId) {
+            givenProjects.value.push((await instance.get(`project/${team.currentProjectId}`)).data)
+          }
       })
     )
 

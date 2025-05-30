@@ -7,6 +7,7 @@ import { Team } from 'src/teams/entities/team.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Rialto } from 'src/rialto/entities/rialto.entity';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ProjectService {
@@ -18,7 +19,8 @@ export class ProjectService {
     @InjectRepository(Team)
     private readonly teamRepository: Repository<Team>,
     @InjectRepository(Rialto)
-    private readonly rialtoRepository: Repository<Rialto>
+    private readonly rialtoRepository: Repository<Rialto>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createProject(createProjectDto: {
@@ -55,7 +57,7 @@ export class ProjectService {
     return project
   }
 
-  async updateProjectStatus(id: number, status: 'published' | 'revision' | 'rejected', comment?: string) {
+  async updateProjectStatus(id: number, status: 'published' | 'revision' | 'rejected', fromUser: number, comment?: string) {
     const project = await this.projectRepository.findOne({ where: { id } });
     if (!project) {
       throw new NotFoundException('Проект не найден');
@@ -66,8 +68,35 @@ export class ProjectService {
       project.comment = comment;
     }
 
+
     if (status === 'published') {
       project.recruitment = 'open'
+
+      await this.notificationsService.createAndNotify({
+        type: 'publishedProject',
+        message: `Ваш проект ${project.title} опубликован.`,
+        fromUserId: fromUser,
+        toUserId: project.userId,
+        projectId: project.id
+      })
+    }
+    else if (status === 'revision') {
+      await this.notificationsService.createAndNotify({
+        type: 'revisionProject',
+        message: `Ваш проект ${project.title} отправлен на доработку.`,
+        fromUserId: fromUser,
+        toUserId: project.userId,
+        projectId: project.id
+      })
+    }
+    else if (status === 'rejected') {
+      await this.notificationsService.createAndNotify({
+        type: 'rejectedProject',
+        message: `Ваш проект ${project.title} отклонен.`,
+        fromUserId: fromUser,
+        toUserId: project.userId,
+        projectId: project.id
+      })
     }
 
     return await this.projectRepository.save(project);
@@ -115,6 +144,15 @@ export class ProjectService {
     project.teamId = null
     project.status = 'published'
     project.recruitment = 'open'
+
+    await this.notificationsService.createAndNotify({
+      type: 'resignedTeam',
+      message: `Команду ${team.title} сняли с проекта ${project.title}.`,
+      fromUserId: project.userId,
+      toUserId: team.teamLeaderId,
+      teamId: team.id,
+      projectId: project.id
+    })
 
     return await  this.projectRepository.save(project)
   }
@@ -166,9 +204,23 @@ export class ProjectService {
       await this.teamRepository.save(project.team);
     }
 
+    if (project.teamId) {
+    await this.notificationsService.createAndNotify({
+      type: 'completeProject',
+      message: `Проект ${project.title} был завершен командой ${project.team.title}`,
+      fromUserId: project.userId,
+      toUserId: project.team.teamLeaderId,
+      teamId: project.teamId,
+      projectId: project.id
+    })
+  }
+
     project.status = 'completed';
     project.teamId = null;
     project.recruitment = 'close'
+
+    
+
     return await this.projectRepository.save(project);
   }
 

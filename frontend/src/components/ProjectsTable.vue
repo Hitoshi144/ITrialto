@@ -202,12 +202,16 @@
         </transition>
         <q-btn v-if="selectedProject.status === 'published'" :filled="teamSelecting ? false: true" :outline="teamSelecting ? true : false" color="primary" :label="(selectedTeam && myTeamsRequests.some(req => 
       req.projectId === selectedProject!.id && 
-      req.teamId === selectedTeam!.id
+      req.teamId === selectedTeam!.id &&
+      req.status !== 'rejected' &&
+      selectedProject?.teamId
     )) ? 'заявка подана' : 'Подать заявку'" class="send-request" @click="teamSelecting ? sendRequest(selectedProject.id, selectedTeam!.id) : teamSelecting = true" :disable="Boolean(
     (teamSelecting && !selectedTeam) || 
     (selectedTeam && myTeamsRequests.some(req => 
       req.projectId === selectedProject!.id && 
-      req.teamId === selectedTeam!.id
+      req.teamId === selectedTeam!.id &&
+      req.status !== 'rejected' &&
+      selectedProject?.teamId
     )))" />
         <transition name="fade" mode="out-in">
         <q-btn filled label="отмена" color="primary" class="send-request" @click="teamSelecting = false; selectedTeam = null" v-if="teamSelecting" />

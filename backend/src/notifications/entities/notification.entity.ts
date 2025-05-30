@@ -9,7 +9,8 @@ export class Notification {
     id: number
 
     @Column()
-    type: 'message' | 'system' | 'alert' | 'teamJoinRequest' | 'userJoinedToTeam' | 'approvedTeamJoin' | 'rejectedTeamJoin' | 'teamMemberRemoved' | 'createTeamApproved' | 'createTeamRejected'
+    type: 'message' | 'system' | 'alert' | 'teamJoinRequest' | 'userJoinedToTeam' | 'approvedTeamJoin' | 'rejectedTeamJoin' | 'teamMemberRemoved' | 'createTeamApproved' | 'createTeamRejected' |
+    'publishedProject' | 'rejectedProject' | 'revisionProject' | 'assignedTeam' | 'notAssignedTeam' | 'completeProject' | 'toProjectRequest' | 'resignedTeam'
 
     @Column()
     message: string

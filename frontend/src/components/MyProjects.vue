@@ -48,7 +48,7 @@
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
-        <div v-for="project in publishedProjects" :key="project.id">
+        <div v-for="project in publishedProjects" :key="project.id" :id="`project-${project.id}`">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -239,7 +239,7 @@
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
-        <div v-for="project in completeProjects" :key="project.id">
+        <div v-for="project in completeProjects" :key="project.id" :id="`project-${project.id}`">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -290,7 +290,7 @@
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
-        <div v-for="project in rejectedProjects" :key="project.id">
+        <div v-for="project in rejectedProjects" :key="project.id" :id="`project-${project.id}`">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -341,7 +341,7 @@
         <q-btn outline color="primary" label="Создать проект" style="height: 20px; border-radius: 10px;" icon="add" @click="projectIsCreating = true; step = 1; projectIsResubmit = false" />
         </div>
 
-        <div v-for="project in revisionProjects" :key="project.id">
+        <div v-for="project in revisionProjects" :key="project.id" :id="`project-${project.id}`">
           <q-separator />
           <div class="projects-header" style="align-items: center;">
             <p class="project-title">{{ project.title }}</p>
@@ -1340,6 +1340,8 @@ const resignTeamFromProject = async (project: IProjects) => {
         toast.error(errorMessage);
   }
 }
+
+
 
 watch(tab, async (newTab) => {
   await router.push({query: {...route.query, tab: newTab}})

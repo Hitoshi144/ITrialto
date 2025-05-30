@@ -10,6 +10,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Team } from 'src/teams/entities/team.entity';
 import { Project } from 'src/project/entities/project.entity';
 import { User } from 'src/user/entities/user.entity';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { User } from 'src/user/entities/user.entity';
         signOptions: {expiresIn: '30d'},
       }),
       inject: [ConfigService],
-    })
+    }),
+    NotificationsModule
   ],
   controllers: [ProjectRequestController],
   providers: [ProjectRequestService],

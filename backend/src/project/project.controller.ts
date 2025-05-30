@@ -72,9 +72,9 @@ export class ProjectController {
 
   @Patch(':id/publish')
   @UseGuards(JwtAuthGuard)
-  async publishProject(@Param('id') id: string) {
+  async publishProject(@Param('id') id: string, @Request() req) {
     try {
-      return await this.projectService.updateProjectStatus(+id, 'published');
+      return await this.projectService.updateProjectStatus(+id, 'published', req.user.id);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -82,9 +82,9 @@ export class ProjectController {
 
   @Patch(':id/revision')
   @UseGuards(JwtAuthGuard)
-  async sendToRevision(@Param('id') id: string, @Body() body: { comment: string }) {
+  async sendToRevision(@Param('id') id: string, @Body() body: { comment: string }, @Request() req) {
     try {
-      return await this.projectService.updateProjectStatus(+id, 'revision', body.comment);
+      return await this.projectService.updateProjectStatus(+id, 'revision', req.user.id, body.comment);
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -92,9 +92,9 @@ export class ProjectController {
 
   @Patch(':id/reject')
   @UseGuards(JwtAuthGuard)
-  async rejectProject(@Param('id') id: string) {
+  async rejectProject(@Param('id') id: string, @Request() req) {
     try {
-      return await this.projectService.updateProjectStatus(+id, 'rejected');
+      return await this.projectService.updateProjectStatus(+id, 'rejected', req.user.id);
     } catch (error) {
       throw new BadRequestException(error.message);
     }

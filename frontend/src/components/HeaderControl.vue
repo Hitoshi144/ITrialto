@@ -25,7 +25,7 @@
 
       <div class="notif-profile">
       <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="notifications" @click="notificationsMenu = true; onMenuShow()">
-        <q-badge color="primary" class="notif-count" floating>{{ notifications.length }}</q-badge>
+        <q-badge v-if="notifications.filter(n => !n.isRead).length > 0" color="primary" class="notif-count" floating :class="{ 'notification-pulse': socketStore.hasNewNotification }">{{ notifications.filter(n => !n.isRead).length }}</q-badge>
       </q-btn>
       <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[0, 5]">
         <q-list class="bg-secondary notifications-menu">
@@ -68,6 +68,46 @@
             <p class="notification-text">Создание команды <span>{{ notification.message }}</span> отклонено.</p>
           </div>
 
+          <div v-if="notification.type === 'publishedProject'" class="notification-data">
+            <q-icon name="publish" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Ваш проект <span>{{ notification.project.title }}</span> опубликован.</p>
+          </div>
+
+          <div v-if="notification.type === 'rejectedProject'" class="notification-data">
+            <q-icon name="unpublished" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Ваш проект <span>{{ notification.project.title }}</span> отклонен.</p>
+          </div>
+
+          <div v-if="notification.type === 'revisionProject'" class="notification-data">
+            <q-icon name="report" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Ваш проект <span>{{ notification.project.title }}</span> отправлен на доработку.</p>
+          </div>
+
+          <div v-if="notification.type === 'notAssignedTeam'" class="notification-data">
+            <q-icon name="cancel_schedule_send" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Заявка на проект <span>{{ notification.project.title }}</span> от команды <span>{{ notification.team.title }}</span> отклонена.</p>
+          </div>
+
+          <div v-if="notification.type === 'assignedTeam'" class="notification-data">
+            <q-icon name="verified" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Заявка на проект <span>{{ notification.project.title }}</span> от команды <span>{{ notification.team.title }}</span> одобрена.</p>
+          </div>
+
+          <div v-if="notification.type === 'toProjectRequest'" class="notification-data">
+            <q-icon name="hail" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Команда <span>{{ notification.team.title }}</span> отправила заявку на проект <span>{{ notification.project.title }}</span>.</p>
+          </div>
+
+          <div v-if="notification.type === 'resignedTeam'" class="notification-data">
+            <q-icon name="group_off" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Команда <span>{{ notification.team.title }}</span> была снята с проекта <span>{{ notification.project.title }}</span>.</p>
+          </div>
+
+          <div v-if="notification.type === 'completeProject'" class="notification-data">
+            <q-icon name="task_alt" class="notification-icon" size="30px" color="primary"/>
+            <p class="notification-text">Команда <span>{{ notification.team.title }}</span> завершила проект <span>{{ notification.project.title }}</span>.</p>
+          </div>
+
           <div style="display: flex; flex-direction: row; justify-content: space-between;">
           <p class="notification-date">{{ sharedDateInterpretation(notification.timestamp.toString()) }}</p>
           <p v-if="typeVerified(notification.type)" class="goTo" @click="notificationRedirect(notification)">Перейти</p>
@@ -76,10 +116,10 @@
 
           </div>
 
-
           </q-item>
 
         </q-list>
+
         </q-menu>
 
       <q-btn flat class="bg-accent" style="border-radius: 10px;" rounded>
@@ -293,6 +333,25 @@ input[type="radio"] {
 	transition: color 0.15s ease-in;
 }
 
+.notification-pulse {
+  animation: pulse 3s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: red;
+    box-shadow: 0 0 5px red;
+  }
+  70% {
+    background-color: red;
+    box-shadow: 0 0 10px red;
+  }
+  100% {
+    background-color: var(--q-primary); /* Возвращаем стандартный цвет */
+    box-shadow: none;
+  }
+}
+
 .tab:hover {
   color: white;
 }
@@ -368,6 +427,7 @@ input[id="radio-3"] {
 .notification-tale {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .notification-data {
@@ -415,6 +475,7 @@ input[id="radio-3"] {
   background-color: rgba(65, 120, 156, 0.2);
   animation: fadeOutBackground 3s forwards;
 }
+
 
 @keyframes fadeOutBackground {
   from {
@@ -493,12 +554,11 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
   const typeVerified = (type: string) => {
     switch (type){
       case 'userJoinedToTeam':
-        return false
       case 'rejectedTeamJoin':
-        return false
       case 'teamMemberRemoved':
-        return false
       case 'createTeamRejected':
+      case 'notAssignedTeam':
+      case 'resignedTeam':
         return false
       default:
         return true
@@ -539,6 +599,7 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
     try {
       switch (notification.type) {
         case 'teamJoinRequest':
+        case 'assignedTeam':
           await router.push({name: 'i-teamleader', hash: `#team-${notification.teamId}`})
           break
         case 'createTeamApproved':
@@ -547,6 +608,18 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
         case 'approvedTeamJoin':
           await router.push({name: 'i-member', hash: `#team-${notification.teamId}`})
           break
+        case 'publishedProject':
+        case 'toProjectRequest':
+          await router.push({name: 'my-projects', query: {tab: 'published'}, hash: `#project-${notification.projectId}`})
+          break
+        case 'rejectedProject':
+          await router.push({name: 'my-projects', query: {tab: 'rejected'}, hash: `#project-${notification.projectId}`})
+          break
+        case 'revisionProject':
+          await router.push({name: 'my-projects', query: {tab: 'revision'}, hash: `#project-${notification.projectId}`})
+          break
+        case 'completeProject':
+          await router.push({name: 'projects', params: {rialtoId: notification.project.rialtoId, projectId: notification.projectId}})
       }
     }
     catch (error: any) {

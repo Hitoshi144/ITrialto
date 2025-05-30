@@ -7,6 +7,7 @@ import { Team } from 'src/teams/entities/team.entity';
 import { Repository } from 'typeorm';
 import { ProjectRequest } from './entities/project-request.entity';
 import { User } from 'src/user/entities/user.entity';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ProjectRequestService {
@@ -19,6 +20,7 @@ export class ProjectRequestService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async createRequest(projectId: number, teamId: number, userId: number) {
@@ -89,6 +91,15 @@ export class ProjectRequestService {
       projectId,
       status: 'pending'
     });
+
+    await this.notificationsService.createAndNotify({
+      type: 'toProjectRequest',
+      message: `Поступила новая заявка на проект ${project.title} от команды ${team.title}`,
+      fromUserId: team.teamLeaderId,
+      toUserId: project.userId,
+      projectId: project.id,
+      teamId: teamId
+    })
   
     return await this.projectRequestRepository.save(request);
   }
@@ -127,6 +138,16 @@ export class ProjectRequestService {
     await this.teamRepository.save(request.team);
 
     request.status = 'approved';
+
+    await this.notificationsService.createAndNotify({
+      type: 'assignedTeam',
+      message: `Команда ${request.team.title} назначена на проект ${request.project.title}`,
+      fromUserId: request.project.userId,
+      toUserId: request.team.teamLeaderId,
+      teamId: request.teamId,
+      projectId: request.projectId
+    })
+
     return await this.projectRequestRepository.save(request);
   }
 
@@ -144,6 +165,28 @@ export class ProjectRequestService {
     }
 
     request.status = 'rejected';
+
+    const team = await this.teamRepository.findOne({
+      where: {id: request.teamId}
+    })
+
+    const project = await this.projectRepository.findOne({
+      where: {id: request.projectId}
+    })
+
+    if (!team || !project) {
+      throw new BadRequestException('Команда или проект не найдены')
+    }
+
+    await this.notificationsService.createAndNotify({
+      type: 'notAssignedTeam',
+      message: `Заявка на проект ${project.title} от команды ${team.title} отклонена`,
+      fromUserId: project.userId,
+      toUserId: team.teamLeaderId,
+      teamId: request.teamId,
+      projectId: request.projectId
+    })
+
     return await this.projectRequestRepository.save(request);
   }
 

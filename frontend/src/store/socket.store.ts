@@ -10,6 +10,7 @@ export const useSocketStore = defineStore('socket', {
   state: () => ({
     isConnected: false,
     notifications: [] as INotification[],
+    hasNewNotification: false,
   }),
   
   actions: {
@@ -63,6 +64,7 @@ export const useSocketStore = defineStore('socket', {
     
     handleNotification(data: INotification) {
       this.notifications.unshift(data);
+      this.triggerNotificationPulse()
       console.log('New notification:', data);
     },
     
@@ -99,6 +101,14 @@ export const useSocketStore = defineStore('socket', {
 
     addNotification(notification: INotification) {
       this.notifications.unshift(notification)
-    }
+      this.triggerNotificationPulse()
+    },
+
+    triggerNotificationPulse() {
+      this.hasNewNotification = true;
+      setTimeout(() => {
+        this.hasNewNotification = false;
+      }, 3000); // Через 3 секунды возвращаем обычный цвет
+    },
   }
 });

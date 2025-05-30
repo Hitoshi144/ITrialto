@@ -8,6 +8,7 @@ import { Project } from './entities/project.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Rialto } from 'src/rialto/entities/rialto.entity';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Project, User, Team, Rialto]),
@@ -18,7 +19,8 @@ import { Rialto } from 'src/rialto/entities/rialto.entity';
       signOptions: {expiresIn: '30d'},
     }),
     inject: [ConfigService],
-  })
+  }),
+  NotificationsModule
 ],
   controllers: [ProjectController],
   providers: [ProjectService],
