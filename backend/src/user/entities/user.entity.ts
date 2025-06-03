@@ -1,4 +1,6 @@
+import { Chat } from "src/chat/entities/chat.entity";
 import { CreateTeamRequest } from "src/create-team-request/entities/create-team-request.entity";
+import { Message } from "src/message/entities/message.entity";
 import { Project } from "src/project/entities/project.entity";
 import { TeamRequest } from "src/team-request/entities/team-request.entity";
 import { Team } from "src/teams/entities/team.entity";
@@ -60,4 +62,10 @@ export class User {
 
     @Column('text', {array: true, nullable: true})
     competencies: string[];
+
+    @ManyToMany(() => Chat, chat => chat.participants)
+    chats: Chat[]
+
+    @OneToMany(() => Message, message => message.sender)
+    messages: Message[]
 }

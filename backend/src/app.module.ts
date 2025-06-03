@@ -16,6 +16,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationsService } from './notifications/notifications.service';
 import { SocketModule } from './socket/socket.module';
 import { WsJwtGuard } from './auth/guards/ws-jwt.guard';
+import { ChatModule } from './chat/chat.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [UserModule, AuthModule, ConfigModule.forRoot(),
@@ -42,6 +44,8 @@ import { WsJwtGuard } from './auth/guards/ws-jwt.guard';
     CreateTeamRequestModule,
     ProjectRequestModule,
     RialtoModule,
+    ChatModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService, WsJwtGuard],
