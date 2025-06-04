@@ -148,3 +148,23 @@ export interface SocketError {
     message: string
     code?: number
 }
+
+export interface IChat {
+    id: number
+    name?: string
+    isGroup: boolean
+    participants: IUser[]
+    createdAt: Date
+    updatedAt: Date
+    messages: IMessage[]
+    createdBy: IUser
+}
+
+export interface IMessage {
+    id: number
+    content: string
+    createdAt: string
+    sender: IUser
+    chat: IChat
+    isRead: boolean
+}

@@ -1,7 +1,8 @@
 // src/api/socket.api.ts
 import { io, type Socket } from 'socket.io-client';
-import type { INotification } from 'src/types/types';
+import type { IChat, IMessage, INotification } from 'src/types/types';
 import { instance } from './axios.api';
+import { useUserStore } from 'src/store';
 
 class SocketAPI {
   private socket: Socket | null = null;
@@ -93,6 +94,20 @@ class SocketAPI {
   public async fetchNotifications(): Promise<INotification[]> {
     const response = await instance.get('notifications')
 
+    return response.data
+  }
+
+  public async fetchChats(): Promise<IChat[]> {
+    const userId: number = useUserStore().getUser!.id
+    if (!userId) {
+      return []
+    }
+    const response = await instance.get('chat/my', {params: {userId}})
+    return response.data
+  }
+
+  public async fetchMessages(chat: IChat): Promise<IMessage[]> {
+    const response = await instance.get(`chat/${chat.id}/messages`)
     return response.data
   }
 }

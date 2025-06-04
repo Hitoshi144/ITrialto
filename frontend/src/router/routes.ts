@@ -26,6 +26,12 @@ const routes: RouteRecordRaw[] = [
       meta: {requiresAuth: true}
     },
     {
+      path: 'chats',
+      name: 'chats',
+      component: () => import('pages/ChatsPage.vue'),
+      meta: {requiresAuth: true}
+    },
+    {
       path: 'projects-exchange',
       name: 'projects-exchange',
       component: () => import('pages/ProjectWorkContinue.vue'),

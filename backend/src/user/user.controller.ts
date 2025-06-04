@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseGuards, Res, UploadedFile, UseInterceptors, Req, StreamableFile, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseGuards, Res, UploadedFile, UseInterceptors, Req, StreamableFile, NotFoundException, Request } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -72,5 +72,11 @@ async uploadAvatar(@UploadedFile() file: Express.Multer.File) {
   @Get(':userId')
   async getUser(@Param('userId') userId: number) {
     return await this.userService.getUser(userId)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search/:request')
+  async searchUsers(@Param('request') request: string, @Request() req) {
+    return await this.userService.searchUsers(request, req.user.id)
   }
 }

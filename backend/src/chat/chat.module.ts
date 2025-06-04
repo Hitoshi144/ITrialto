@@ -12,6 +12,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Chat } from './entities/chat.entity';
 import { Message } from 'src/message/entities/message.entity';
 import { UserService } from 'src/user/user.service';
+import { SocketService } from 'src/socket/socket.service';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UserService } from 'src/user/user.service';
       }),
       inject: [ConfigService],
     }),
+    SocketModule
   ],
   controllers: [ChatController],
   providers: [ChatService, UserService],

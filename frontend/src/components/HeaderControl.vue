@@ -26,8 +26,7 @@
       <div class="notif-profile">
       <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="notifications" @click="notificationsMenu = true; onMenuShow()">
         <q-badge v-if="notifications.filter(n => !n.isRead).length > 0" color="primary" class="notif-count" floating :class="{ 'notification-pulse': socketStore.hasNewNotification }">{{ notifications.filter(n => !n.isRead).length }}</q-badge>
-      </q-btn>
-      <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[0, 5]">
+      <q-menu transition-show="jump-down" transition-hide="jump-up" transition-duration="300" fit :offset="[50, 5]">
         <q-list class="bg-secondary notifications-menu">
           
           <q-item v-for="notification in notifications" :key="notification.id" :class="{'notification-unread': !notification.isRead, 'notification-read': notification.isRead}">
@@ -121,6 +120,10 @@
         </q-list>
 
         </q-menu>
+      </q-btn>
+
+      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="chat" @click="router.push({name: 'chats'})" />
+
 
       <q-btn flat class="bg-accent" style="border-radius: 10px;" rounded>
       <div class="profile_logo">

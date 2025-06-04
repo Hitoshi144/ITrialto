@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, BadRequestException, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
@@ -12,7 +12,7 @@ export class ChatController {
   @Post('private')
   async createPrivateChat(@Request() req, @Body() body: {user2Id: number}) {
     try {
-      return await this.chatService.createPrivateChat(req.id, body.user2Id)
+      return await this.chatService.createPrivateChat(req.user.id, body.user2Id)
     }
     catch (error) {
       throw new BadRequestException(error.message)
@@ -23,7 +23,7 @@ export class ChatController {
   @Post('group')
   async createGroupChat(@Request() req, @Body() body: {name: string, userIds: number[]}) {
     try {
-      return await this.chatService.createGroupChat(req.id, body.name, body.userIds)
+      return await this.chatService.createGroupChat(req.user.id, body.name, body.userIds)
     }
     catch (error) {
       throw new BadRequestException(error.message)
@@ -65,9 +65,9 @@ export class ChatController {
 
   @UseGuards(JwtAuthGuard)
   @Get('my')
-  async getUserChats(@Body() body: {userId: number}) {
+  async getUserChats(@Query('userId') userId: number) {
     try {
-      return await this.chatService.getUserChats(body.userId)
+      return await this.chatService.getUserChats(+userId)
     }
     catch (error) {
       throw new BadRequestException(error.message)
@@ -98,13 +98,35 @@ export class ChatController {
 
   @UseGuards(JwtAuthGuard)
   @Post('message')
-  async sendMessage(@Request() req, @Body() body: {chatId: number, content: string}) {
+  async sendMessage(@Body() body: {chatId: number, senderId: number, content: string}) {
     try {
-      return await this.chatService.sendMessage(body.chatId, req.id, body.content)
+      return await this.chatService.sendMessage(body.chatId, body.senderId, body.content)
     }
     catch (error) {
       throw new BadRequestException(error.message)
     } 
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('chatting/:id')
+  async userChatting(@Param('id') id: number, @Request() req) {
+    try {
+      await this.chatService.userChatting(+id, req.user.id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('stopchatting/:id')
+  async stopChatting(@Param('id') id: number, @Request() req) {
+    try {
+      await this.chatService.stopChatting(+id, req.user.id)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -122,7 +144,7 @@ export class ChatController {
   @Delete(':id')
   async deleteChat(@Param('id') id: number, @Request() req) {
     try {
-      return await this.chatService.deleteChat(+id, req.id)
+      return await this.chatService.deleteChat(+id, req.user.id)
     }
     catch (error) {
       throw new BadRequestException(error.message)
@@ -130,10 +152,10 @@ export class ChatController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id')
-  async markMessagesAsRead(@Param('id') id: number, @Request() req) {
+  @Patch(':messageId')
+  async markMessagesAsRead(@Param('messageId') messageId: number, @Request() req) {
     try {
-      return await this.chatService.markMessagesAsRead(+id, req.id)
+      return await this.chatService.markMessagesAsRead(+messageId, req.user.id)
     }
     catch (error) {
       throw new BadRequestException(error.message)

@@ -7,6 +7,7 @@ import { Chat } from './entities/chat.entity';
 import { User } from 'src/user/entities/user.entity';
 import { Message } from 'src/message/entities/message.entity';
 import { UserService } from 'src/user/user.service';
+import { SocketService } from 'src/socket/socket.service';
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,7 @@ export class ChatService {
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
     private readonly userService: UserService,
+    private readonly socketService: SocketService,
   ) {}
 
   async createPrivateChat(user1Id: number, user2Id: number): Promise<Chat> {
@@ -53,7 +55,23 @@ export class ChatService {
         createdBy: user1
       })
 
-      return await this.chatRepository.save(chat)
+      const saved = await this.chatRepository.save(chat)
+      const result = await this.chatRepository.findOne({
+        where: {id: saved.id},
+        relations: ['participants']
+      })
+
+      if (!result) {
+        throw new NotFoundException('Cant find created chat')
+      }
+
+      const isDelivered = this.socketService.sendToUser(user2Id, 'newChat', result)
+
+      if (!isDelivered) {
+        console.warn(`User ${user2Id} is not currently connected via WebSocket`);
+      }
+
+      return result
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -89,6 +107,14 @@ export class ChatService {
         isGroup: true,
         participants: [creator, ...users],
         createdBy: creator
+      })
+
+      userIds.forEach(userId => {
+        const isDelivered = this.socketService.sendToUser(userId, 'newChat', chat)
+
+        if (!isDelivered) {
+          console.warn(`User ${userId} is not currently connected via WebSocket`);
+        }
       })
 
       return await this.chatRepository.save(chat)
@@ -131,6 +157,14 @@ export class ChatService {
 
       chat.participants = [...chat.participants, ...newParticipants]
 
+      userIds.forEach(userId => {
+        const isDelivered = this.socketService.sendToUser(userId, 'newChat', chat)
+
+        if (!isDelivered) {
+          console.warn(`User ${userId} is not currently connected via WebSocket`);
+        }
+      })
+
       return await this.chatRepository.save(chat)
     }
     catch (error: any) {
@@ -152,6 +186,14 @@ export class ChatService {
       if (!chat.isGroup) {
         throw new BadRequestException('Cannot remove participants from private chat')
       }
+
+      userIds.forEach(userId => {
+        const isDelivered = this.socketService.sendToUser(userId, 'removedFromChat', chat)
+
+        if (!isDelivered) {
+          console.warn(`User ${userId} is not currently connected via WebSocket`);
+        }
+      })
 
       chat.participants = chat.participants.filter(user => !userIds.includes(user.id))
 
@@ -217,7 +259,7 @@ export class ChatService {
 
   async sendMessage(chatId: number, senderId: number, content: string): Promise<Message> {
     try {
-      const chat = await this.chatRepository.findOne({ where: { id: chatId } });
+      const chat = await this.chatRepository.findOne({ where: { id: chatId }, relations: ['participants'] });
     const sender = await this.userRepository.findOne({ where: { id: senderId } });
 
     if (!chat || !sender) {
@@ -232,7 +274,7 @@ export class ChatService {
       .getCount();
 
     if (!isParticipant) {
-      throw new Error('Sender is not a participant of this chat');
+      throw new Error('Sender is not a participant of this chat' + ` sender id: ${senderId}`);
     }
 
     const message = this.messageRepository.create({
@@ -241,7 +283,17 @@ export class ChatService {
       chat,
     });
 
-    return await this.messageRepository.save(message);
+    const savedMessage = await this.messageRepository.save(message);
+
+    chat.participants.filter(p => p.id !== senderId).forEach(user => {
+      const isDelivered = this.socketService.sendToUser(user.id, 'newMessage', message)
+
+      if (!isDelivered) {
+        console.warn(`User ${user.id} is not currently connected via WebSocket`);
+      }
+    })
+
+    return savedMessage
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -280,16 +332,39 @@ export class ChatService {
       throw new Error('Only chat creator can delete the chat');
     }
 
+    chat.participants.filter(p => p.id !== userId).forEach(user => {
+      const isDelivered = this.socketService.sendToUser(user.id, 'removedFromChat', chat)
+
+      if (!isDelivered) {
+        console.warn(`User ${user.id} is not currently connected via WebSocket`);
+      }
+    })
+
     await this.chatRepository.remove(chat);
   }
 
-  async markMessagesAsRead(chatId: number, userId: number): Promise<void> {
+  async markMessagesAsRead(messageId: number, userId: number): Promise<void> {
     await this.messageRepository
       .createQueryBuilder()
       .update(Message)
       .set({ isRead: true })
-      .where('chatId = :chatId AND senderId != :userId', { chatId, userId })
+      .where('id = :messageId AND senderId != :userId', { messageId, userId })
       .execute();
+    
+    const message = await this.messageRepository.findOne({
+      where: {id: messageId},
+      relations: ['sender', 'chat']
+    })
+
+    if (!message) {
+      throw new NotFoundException('Сообщение не найдено')
+    }
+
+    const isDelivered = this.socketService.sendToUser(message.sender.id, 'markAsRead', message)
+
+    if (!isDelivered) {
+      console.warn(`User ${message.sender.id} is not currently connected via WebSocket`);
+    }
   }
 
   async getUnreadMessagesCount(userId: number): Promise<{ [chatId: number]: number }> {
@@ -307,5 +382,35 @@ export class ChatService {
       acc[chatId] = parseInt(count, 10);
       return acc;
     }, {});
+  }
+
+  async userChatting(chatId: number, userId: number) {
+    const chat = await this.chatRepository.findOne({
+      where: {id: chatId},
+      relations: ['participants']
+    })
+
+    if (!chat) {
+      throw new NotFoundException('chat not found')
+    }
+
+    chat.participants.filter(p => p.id !== userId).forEach(user => {
+      this.socketService.sendToUser(user.id, 'userChatting', chat.id)
+    })
+  }
+
+  async stopChatting(chatId: number, userId: number) {
+    const chat = await this.chatRepository.findOne({
+      where: {id: chatId},
+      relations: ['participants']
+    })
+
+    if (!chat) {
+      throw new NotFoundException('chat not found')
+    }
+
+    chat.participants.filter(p => p.id !== userId).forEach(user => {
+      this.socketService.sendToUser(user.id, 'stopChatting', chat.id)
+    })
   }
 }
