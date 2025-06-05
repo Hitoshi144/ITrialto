@@ -106,6 +106,12 @@ export const useSocketStore = defineStore('socket', {
     socketAPI.subscribe('stopChatting', (chatId: number) => {
       this.chatting[chatId] = false
     })
+    socketAPI.subscribe('newName', (chat: IChat) => {
+      this.setNewChatName(chat)
+    })
+    socketAPI.subscribe('participantRemovedFromChat', (chat: IChat) => {
+      this.participantRemoved(chat)
+    })
     },
     
     handleConnect() {
@@ -172,7 +178,27 @@ export const useSocketStore = defineStore('socket', {
     },
 
     removeChat(chat: IChat) {
-      this.chats.filter(c => c.id !== chat.id)
+      this.chats = this.chats.filter(c => c.id !== chat.id)
+    },
+
+    participantRemoved(chat: IChat) {
+      const currentChat = this.chats.find(c => c.id === chat.id)
+      if (!currentChat) return
+
+      const user = useUserStore().getUser
+      if (!user) return
+
+      if (!chat.participants.find(p => p.id === user.id)) return this.removeChat(chat)
+
+      const updatedChat = {
+        ...currentChat,
+        partcipants: chat.participants
+      }
+
+      const index = this.chats.indexOf(currentChat)
+      if (index !== -1) {
+        this.chats[index] = updatedChat
+      }
     },
 
     addMessage(message: IMessage) {
@@ -201,6 +227,21 @@ export const useSocketStore = defineStore('socket', {
         const index = chatMessages.indexOf(message);
         if (index !== -1) {
           chatMessages[index] = updatedMessage;
+        }
+      }
+    },
+
+    setNewChatName(chat: IChat) {
+      const currentChat = this.chats.find(c => c.id === chat.id)
+      if(currentChat && chat.name) {
+        const updatedChat: IChat = {
+          ...currentChat,
+          name: chat.name
+        }
+
+        const index = this.chats.indexOf(currentChat)
+        if(index !== -1) {
+          this.chats[index] = updatedChat
         }
       }
     }

@@ -47,12 +47,25 @@
             <div v-if="currentChat" class="chat-container">
 
                 <div class="messages-header">
+                  <div style="display: flex; flex-direction: row; align-items: center;">
                     <img class="user-avatar" :src="getParticipantAvatar(currentChat)" />
                     <div>
-                    <p class="chat-header-title" v-if="currentChat.isGroup">{{ currentChat.name }}</p>
+                    <p class="chat-header-title onHover" v-if="currentChat.isGroup" @click="showChatDetails = true">{{ currentChat.name }}</p>
                     <p class="chat-header-title" v-else-if="!currentChat.isGroup">{{ getParticiapnt()?.firstname }} {{ getParticiapnt()?.lastname }}</p>
                     <p class="participants-count" v-if="currentChat.isGroup">{{ currentChat.participants.length }} {{ participantsInterpritaion(currentChat.participants.length) }}</p>
                     </div>
+                    </div>
+                    <q-btn flat icon="more_horiz" color="secondary" style="margin-right: 20px;">
+                      <q-menu class="bg-secondary">
+                        <q-list style="width: 200px;">
+                          <q-item clickable v-close-popup style="display: flex; align-items: center;" class="red-on-hover" @click="deleteChat()">
+                            <q-item-section style="color: #eb6449;">Удалить чат</q-item-section>
+                            <q-icon name="delete" color="negative" size="20px"/>
+                          </q-item>
+
+                        </q-list>
+                      </q-menu>
+                    </q-btn>
                 </div>
 
                 <div class="messages-container" @scroll="handleScroll">
@@ -88,7 +101,7 @@
 
                     
                 </div>
-                <q-chat-message v-if="chatting[currentChat.id]" bg-color="secondary">
+                <q-chat-message v-if="chatting[currentChat.id]" bg-color="secondary" style="margin-left: 65px;margin-top: 10px;">
                         <q-spinner-dots size="2rem" />
                     </q-chat-message>
 
@@ -108,8 +121,8 @@
                 </div>
             </div>
 
-            <div style="width: 100%; height: 100%; display: flex; flex-direction: column;" v-else-if="beginingChat && currentChat === undefined && selectedUser">
-                <div class="messages-header">
+            <div style="width: 100%; height: 100%; display: flex; flex-direction: column;" v-else-if="beginingChat && currentChat === undefined && selectedUser && userRequest !== ''">
+                <div class="messages-header" style="justify-content: flex-start;">
                     <img class="user-avatar" :src="getAvatarUrl(selectedUser.id)" />
                     <div>
                     <p class="chat-header-title">{{ selectedUser?.firstname }} {{ selectedUser?.lastname }}</p>
@@ -130,6 +143,61 @@
 
     <q-dialog v-model="creatingChat">
         <p>да</p>
+    </q-dialog>
+
+    <q-dialog v-model="showChatDetails">
+      <q-list class="chat-details">
+        <div style="display: flex; flex-direction: row; align-items: center;">
+          <img class="user-avatar" :src="avatar_alt" style="height: 100px; margin-right: 20px;"/>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+
+            <transition name="fade" mode="out-in">
+            <p v-if="!changingChatName" class="chat-title">{{ currentChat?.name }} <q-icon name="edit" v-if="currentChat?.createdBy.id === user!.id" size="18px" class="edit-name-btn" @click="changingChatName = true; newChatName = currentChat.name!"/></p>
+            <div v-else-if="changingChatName" style="display: flex; flex-direction: column;">
+            <q-input dense  v-model="newChatName" style="width: 300px;" color="primary" input-style="color: #41789C; margin: 0; font-size: 16px;"/>
+            <div style="display: flex; flex-direction: row; justify-content: space-evenly; margin-top: 20px; margin-bottom: 10px;">
+              <q-btn filled label="сохранить" color="primary" style="border-radius: 10px;" @click="changeChatName()"/>
+              <q-btn outline label="отмена" color="primary" style="border-radius: 10px;" @click="changingChatName= false; newChatName = ''"/>
+            </div>
+            </div>
+            </transition>
+
+            <p class="participants-count" style="color: #41789C;">{{ currentChat?.participants.length }} {{ participantsInterpritaion(currentChat!.participants.length) }}</p>
+          </div>
+        </div>
+        <div class="participants-list">
+          <div class="participant-big-block" v-for="participant in currentChat?.participants" :key="participant.id" :class="{hovered: isHovered[participant.id]}">
+          <div class="participant-block">
+            <img :src="getAvatarUrl(participant.id)" class="user-avatar" />
+            <div class="participant-info">
+              <p> {{ participant.firstname }} {{ participant.lastname }}</p>
+              <p>{{ participant.mail }}</p>
+              <q-badge  v-if="participant.id === currentChat?.createdBy.id">Админ</q-badge>
+            </div>
+          </div>
+          <q-icon v-if="participant.id !== currentChat?.createdBy.id && currentChat?.createdBy.id === user?.id" @mouseover="isHovered[participant.id] = true" @mouseleave="isHovered[participant.id] = false" class="onHover-remove" :class="{ hovered: isHovered[participant.id]}" name="remove" size="18px" style="padding-left: 4px; padding-right: 4px;"
+          @click="selectedParticipant = participant; deletingParticipant = true"
+          />
+          </div>
+        </div>
+      </q-list>
+    </q-dialog>
+
+    <q-dialog v-model="deletingParticipant">
+      <q-list class="chat-details" style="height: 300px;justify-content: space-between;">
+        <div class="participant-block">
+            <img :src="getAvatarUrl(selectedParticipant!.id)" class="user-avatar" />
+            <div class="participant-info">
+              <p> {{ selectedParticipant!.firstname }} {{ selectedParticipant!.lastname }}</p>
+              <p>{{ selectedParticipant!.mail }}</p>
+            </div>
+          </div>
+          <p class="alert-message">Исключить данного участника из чата?</p>
+          <div style="display: flex; gap: 100px;">
+            <q-btn outline label="да" color="primary" style="border-radius: 10px; width: 100px;" @click="removeParticipant()"/>
+            <q-btn filled label="нет" color="primary" style="border-radius: 10px; width: 100px;" @click="deletingParticipant = false; selectedParticipant = undefined"/>
+          </div>
+      </q-list>
     </q-dialog>
 </div>
 </template>
@@ -165,6 +233,16 @@
   .no-select {
     user-select: none;
   }
+
+  .fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 
 .window {
     display: flex;
@@ -384,6 +462,7 @@
     height: 60px;
     background-color: #5093c0;
     display: flex;
+    justify-content: space-between;
     flex-direction: row;
     flex-shrink: 0;
     align-items: center;
@@ -435,6 +514,110 @@ img.q-message-avatar[src*="blob:"] {
   background: rgba(0, 0, 0, 0.3);
 }
 
+.red-on-hover {
+  background-color: #E0EEF8;
+  transition: background-color 0.3s ease;
+}
+
+.red-on-hover:hover {
+  background-color: rgba(235, 100, 73, 0.3);
+}
+
+.onHover {
+  border-bottom: 2px solid;
+  border-bottom-color: transparent;
+  transition: border-bottom-color 0.3s ease;
+}
+
+.onHover:hover {
+  border-bottom-color: #E0EEF8;
+  cursor: pointer;
+}
+
+.onHover-remove {
+  color: #E0EEF8;
+  transition: color 0.3s ease;
+}
+
+.hovered.onHover-remove {
+  color: #eb6449;
+}
+
+.chat-details {
+  width: 560px;
+  min-width: 50px;
+  height: 80vh;
+  background-color: #E0EEF8;
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  border-radius: 10px;
+}
+
+.edit-name-btn {
+  margin-left: 2px;
+  padding: 2px;
+  border: 1px solid;
+  border-radius: 100%;
+  border-color: transparent;
+  transition: border-color 0.3s ease;
+}
+
+.edit-name-btn:hover {
+  border-color: #41789C;
+  cursor: pointer;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.participant-block {
+  display: flex;
+  flex-direction: row;
+  background-color: #41789C;
+  padding: 8px;
+  height: 70px;
+  border-radius: 20px;
+  align-items: center;
+
+  p {
+    margin: 0;
+    color: #E0EEF8;
+  }
+}
+
+.participant-big-block {
+  display: flex;
+  flex-direction: row;
+  background-color: #eb6449;
+  border-radius: 20px;
+  align-items: center;
+  height: 70px;
+  transition: background-color 0.3s ease;
+}
+
+.hovered.participant-big-block {
+  background-color: #E0EEF8;
+}
+
+.participant-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.alert-message {
+  color: #41789C;
+  font-size: 18px;
+}
+
 </style>
 
 <script setup lang="ts">
@@ -470,6 +653,13 @@ const isLoading = ref<boolean>(false)
 const searchResults = ref<IUser[]>([])
 const beginingChat = ref<boolean>(false)
 const selectedUser = ref<IUser | undefined>(undefined)
+const showChatDetails = ref<boolean>(false)
+const changingChatName = ref<boolean>(false)
+const newChatName = ref<string>('')
+const deletingParticipant = ref<boolean>(false)
+const selectedParticipant = ref<IUser>()
+
+const isHovered = ref<Record<number, boolean>>({})
 
 const currentChat = ref<IChat>()
 
@@ -550,6 +740,23 @@ const getAvatarUrl = (userId: number): string => {
   }
   return avatarUrls.value[userId];
 };
+
+const changeChatName = async () => {
+  try {
+    const chat = (await instance.patch('chat/name', {chatId: currentChat.value?.id, name: newChatName.value})).data
+
+    socketStore.setNewChatName(chat)
+
+    changingChatName.value = false
+    newChatName.value = ''
+
+    toast.success('Название чата изменено')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+    toast.error(errorMessage);
+  }
+}
 
 const setCurrentChat = (chat: IChat) => {
   currentChat.value = chat;
@@ -703,6 +910,28 @@ const debouncedSearch = debounce(async (query) => {
   }
 }, 500);
 
+const removeParticipant = async () => {
+  try {
+    if (!currentChat.value || !selectedParticipant.value) return
+
+    const chatId = currentChat.value?.id
+    const userId = selectedParticipant.value.id
+    let userIdMass: number[] = []
+    userIdMass = [...userIdMass, userId]
+
+    await instance.patch('chat/remove', {chatId, userIds: userIdMass})
+
+    deletingParticipant.value = false
+    selectedParticipant.value = undefined
+
+    toast.success('Пользователь удален из чата')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
 const getParticiapnt = () => {
     return currentChat.value?.participants.filter(p => p.id !== user!.id)[0]
 }
@@ -719,6 +948,8 @@ const createPrivateChat = async (user2Id: number) => {
 
         currentChat.value = chat
 
+        beginingChat.value = false
+
         if (currentChat.value)
         void sendMessage(currentChat.value?.id, myMessage.value)
     }
@@ -726,6 +957,26 @@ const createPrivateChat = async (user2Id: number) => {
         const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
         toast.error(errorMessage);
     }
+}
+
+const deleteChat = async () => {
+  try {
+
+    if (!currentChat.value) {
+      return
+    }
+
+    await instance.delete(`chat/${currentChat.value.id}`)
+    socketStore.removeChat(currentChat.value)
+
+    currentChat.value = undefined
+
+    toast.success('Чат удален')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
 }
 
 watch(userRequest, (newVal) => {
@@ -752,6 +1003,22 @@ watch(() => myMessage.value, async() => {
     else if (myMessage.value.trim() === '' && currentChat.value) {
         await instance.post(`chat/stopchatting/${currentChat.value?.id}`)
     }
+})
+
+watch(() => [...chats.value], (newChats) => {
+  // Сработает только если текущий чат пропал из массива
+  if (currentChat.value && !newChats.some(chat => chat.id === currentChat.value?.id)) {
+    currentChat.value = undefined;
+  }
+}, { deep: true });
+
+watch(() => chats.value.find(c => c.id === currentChat.value?.id), (newChat) => {
+  if (newChat && currentChat.value && newChat.name !== currentChat.value?.name && newChat.name) {
+    currentChat.value.name = newChat.name
+  }
+  if (newChat && currentChat.value && newChat.participants !== currentChat.value.participants) {
+    currentChat.value.participants = newChat.participants
+  }
 })
 
 watch(
