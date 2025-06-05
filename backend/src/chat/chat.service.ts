@@ -187,17 +187,23 @@ export class ChatService {
         throw new BadRequestException('Cannot remove participants from private chat')
       }
 
+      console.log(userIds)
+      console.log(chatId)
+
+      chat.participants = chat.participants.filter(user => !userIds.includes(user.id))
+
+      const result =  await this.chatRepository.save(chat)
+
+
       userIds.forEach(userId => {
-        const isDelivered = this.socketService.sendToUser(userId, 'removedFromChat', chat)
+        const isDelivered = this.socketService.sendToUser(userId, 'participantRemovedFromChat', result)
 
         if (!isDelivered) {
           console.warn(`User ${userId} is not currently connected via WebSocket`);
         }
       })
 
-      chat.participants = chat.participants.filter(user => !userIds.includes(user.id))
-
-      return await this.chatRepository.save(chat)
+      return result
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -206,7 +212,7 @@ export class ChatService {
 
   async updateChatName(chatId: number, name: string): Promise<Chat> {
     try {
-      const chat = await this.chatRepository.findOne({ where: { id: chatId } });
+      const chat = await this.chatRepository.findOne({ where: { id: chatId }, relations: ['participants', 'createdBy'] });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
@@ -217,7 +223,17 @@ export class ChatService {
     }
 
     chat.name = name;
-    return await this.chatRepository.save(chat);
+    const result = await this.chatRepository.save(chat);
+
+    chat.participants.filter(p => p.id !== chat.createdBy.id).forEach(user => {
+      const isDelivered = this.socketService.sendToUser(user.id, 'newName', result)
+
+      if (!isDelivered) {
+        console.warn(`User ${user.id} is not currently connected via WebSocket`);
+      }
+    })
+
+    return result
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -249,6 +265,7 @@ export class ChatService {
     .innerJoin('chat.participants', 'user', 'user.id = :userId', { userId })
     .leftJoinAndSelect('chat.participants', 'participants')
     .leftJoinAndSelect('chat.messages', 'messages')
+    .leftJoinAndSelect('chat.createdBy', 'createdBy')
     .orderBy('messages.createdAt', 'DESC') // Опционально: сортировка по последнему сообщению
     .getMany();
     }
@@ -321,14 +338,14 @@ export class ChatService {
   async deleteChat(chatId: number, userId: number): Promise<void> {
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },
-      relations: ['createdBy'],
+      relations: ['createdBy', 'participants', 'messages'],
     });
 
     if (!chat) {
       throw new NotFoundException('Chat not found');
     }
 
-    if (chat.createdBy.id !== userId) {
+    if (chat.createdBy.id !== userId && chat.isGroup) {
       throw new Error('Only chat creator can delete the chat');
     }
 
@@ -339,6 +356,10 @@ export class ChatService {
         console.warn(`User ${user.id} is not currently connected via WebSocket`);
       }
     })
+
+    if (chat.messages && chat.messages.length > 0) {
+      await this.messageRepository.remove(chat.messages)
+    }
 
     await this.chatRepository.remove(chat);
   }
