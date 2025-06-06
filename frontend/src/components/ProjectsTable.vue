@@ -13,7 +13,7 @@
         </p>
       </transition>
     </div>
-    <q-dialog v-model="changeRialto" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade">
+    <q-dialog v-model="changeRialto" backdrop-filter="blur(4px)" transition-show="fade" transition-hide="fade" @before-hide="newRialtoName = ''; creatingRialto = false">
       <q-card flat bordered class="change-rialto-card">
       
         <div style="display: flex; flex-direction: column; align-items: center;">
@@ -24,6 +24,24 @@
         <q-card-section v-for="rialto in rialtos" :key="rialto.id">
           <q-btn outline color="primary" :label="rialto.title" class="select-rialto-btn" @click="selectRialto(rialto.id)" />
         </q-card-section>
+        <q-btn class="select-rialto-btn" :outline="creatingRialto ? false : true"
+        :filled="creatingRialto ? true : false"
+        :label="creatingRialto ? 'отмена' : 'создать биржу'"
+        color="primary"
+        style="margin-bottom: 20px;"
+        @click="creatingRialto = !creatingRialto"><q-icon name="add" v-if="!creatingRialto" /></q-btn>
+
+        <transition name="fade" mode="out-in">
+        <div v-if="creatingRialto">
+        <q-input color="primary" outlined class="select-rialto-btn" v-model="newRialtoName" label="название биржи" style="margin-bottom: 20px;" 
+        :rules="[val => !!val || 'Введите название биржи']"/>
+        <q-btn filled label="создать" color="primary"
+        class="select-rialto-btn"
+        style="margin-bottom: 20px;" 
+        :disable="newRialtoName.trim() === ''"
+        @click="createRialto()"/>
+        </div>
+        </transition>
         </div>
 
       </q-card>
@@ -721,6 +739,9 @@ const router = useRouter()
 
  const userTeams = ref<ITeam[]>([])
 
+ const creatingRialto = ref<boolean>(false)
+ const newRialtoName = ref<string>('')
+
  const isProjectPanelOpen = ref(false)
  const selectedProject = ref<IProjects | null>(null)
 
@@ -963,6 +984,22 @@ function formatDateToRussianShort(isoDateString: string): string {
     return mathcedRialto && matchedStatus && matchedRecruitment && matchesSearch && matchedStack
   });
 });
+
+const createRialto = async () => {
+  try {
+    const title = newRialtoName.value
+    const newRialto = (await instance.post('rialto', {title})).data
+
+    rialtos.value.push(newRialto)
+
+    creatingRialto.value = false
+    newRialtoName.value = ''
+    toast.success('Биржа создана')
+  }
+  catch (error: any) {
+    toast.error(error.message)
+  }
+}
 
 const resetFilters = () => {
   publishedFilter.value = false

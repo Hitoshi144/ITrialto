@@ -203,7 +203,7 @@
             accept="image/*"
             style="display: none"
           />
-          <img class="user-avatar" :src="getChatAvatar(currentChat!.id)" style="height: 100px; margin-right: 20px; cursor: pointer;" @click="triggerFileInput"/>
+          <img class="user-avatar avatar-on-hover" :src="getChatAvatar(currentChat!.id)" style="height: 100px; margin-right: 20px; cursor: pointer;" @click="triggerFileInput"/>
           <div style="display: flex; flex-direction: column; align-items: center;">
 
             <transition name="fade" mode="out-in">
@@ -246,6 +246,7 @@
         style="width: 200px; border-radius: 10px; margin-top: 50px;" 
         @click="addingParticipant = !addingParticipant; addParticipantRequest = ''"/>
 
+        <transition name="slide-fade" mode="out-in">
         <div v-if="addingParticipant" style="width: 90%; display: flex; flex-direction: column; align-items: center;">
         <q-input class="user-search" dense rounded outlined label="Поиск" v-model="addParticipantRequest" color="primary" :loading="isLoading" />
 
@@ -267,6 +268,7 @@
         :disable="selectedUsers.length === 0" 
         @click="addParticipants()"/>
         </div>
+        </transition>
       </q-list>
     </q-dialog>
 
@@ -352,6 +354,16 @@
     border-radius: 100%;
     transition: opacity 0.3s ease;
     background-color: #f0f0f0; /* Фон пока загружается */
+}
+
+.avatar-on-hover {
+  background-color: #41789C;
+  padding: 0px;
+  transition: padding 0.3s ease;
+}
+
+.avatar-on-hover:hover {
+  padding: 5px;
 }
 
 .user-avatar[src*="blob:"] {
@@ -450,6 +462,20 @@
     width: 100%;
     font-size: 16px;
     padding: 0;
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-20px);
+  opacity: 0;
 }
 
 .send-btn {
