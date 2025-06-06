@@ -122,7 +122,9 @@
         </q-menu>
       </q-btn>
 
-      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="chat" @click="router.push({name: 'chats'})" />
+      <q-btn flat class="bg-accent notifications-btn" color="secondary" style="border-radius: 10px;" icon="chat" @click="router.push({name: 'chats'})">
+        <q-badge v-if="newMessagesCount() !== 0" color="primary" class="notif-count" floating :class="{'notification-pulse': newMessagesCount() !== 0}">{{ newMessagesCount() }}</q-badge>
+      </q-btn>
 
 
       <q-btn flat class="bg-accent" style="border-radius: 10px;" rounded>
@@ -531,6 +533,9 @@ import { instance } from 'src/api/axios.api';
 
   const socketStore = useSocketStore()
 
+  const chats = computed(() => socketStore.chats)
+  const messages = computed(() => socketStore.messages)
+
   const router = useRouter()
   const route = useRoute()
 
@@ -629,6 +634,21 @@ const avatarUrl = ref(getImageUrl('avatar_alt.png'));
       const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
         toast.error(errorMessage);
     }
+  }
+
+  const newMessagesCount = () => {
+    let count = 0
+
+    chats.value.forEach(chat => {
+      const chatMessages = messages.value[chat.id]
+      if(!chatMessages) return;
+
+      chatMessages.forEach(m => {
+        if (!m.isRead && user.value && m.sender.id !== user.value.id) count += 1
+      })
+    })
+
+    return count
   }
 
   onMounted(async () => {

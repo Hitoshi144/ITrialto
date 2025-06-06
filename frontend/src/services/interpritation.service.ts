@@ -16,31 +16,30 @@ export const sharedDateInterpretation = (date: string) => {
 };
 
 export const formatSmartDate = (dateString: string): string => {
-  // Приводим входную дату к локальному времени
   const date = new Date(dateString);
+  const newHours = date.getHours() + 5
+  date.setHours(newHours)
   const now = new Date();
   
-  // Корректируем даты на разницу в часовом поясе
-  const timezoneOffset = date.getTimezoneOffset() * 60000;
-  const localDate = new Date(date.getTime() - timezoneOffset);
-  const localNow = new Date(now.getTime() - timezoneOffset);
+  const isToday = date.toDateString() === now.toDateString();
+  const isCurrentYear = date.getFullYear() === now.getFullYear();
 
-  const pad = (num: number): string => num.toString().padStart(2, '0');
-
-  // Сравниваем даты с учётом локального времени
-  const isToday = 
-    localDate.getDate() === localNow.getDate() &&
-    localDate.getMonth() === localNow.getMonth() &&
-    localDate.getFullYear() === localNow.getFullYear();
-  
-  const isCurrentYear = localDate.getFullYear() === localNow.getFullYear();
-  
   if (isToday) {
-    return `${pad(localDate.getHours())}:${pad(localDate.getMinutes())}`;
+    return new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   } else if (isCurrentYear) {
-    return `${pad(localDate.getDate())}.${pad(localDate.getMonth() + 1)}`;
+    return new Intl.DateTimeFormat(undefined, {
+      day: '2-digit',
+      month: '2-digit'
+    }).format(date);
   } else {
-    return `${pad(localDate.getDate())}.${pad(localDate.getMonth() + 1)}.${localDate.getFullYear()}`;
+    return new Intl.DateTimeFormat(undefined, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
   }
 };
 

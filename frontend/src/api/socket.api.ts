@@ -110,6 +110,17 @@ class SocketAPI {
     const response = await instance.get(`chat/${chat.id}/messages`)
     return response.data
   }
+
+  public async fetchChatAvatar(chatId: number): Promise<Blob | null> {
+    try {
+      const response = await instance.get(`chat/avatar/${chatId}`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch {
+      return null
+    }
+  }
 }
 
 export const socketAPI = SocketAPI.getInstance();

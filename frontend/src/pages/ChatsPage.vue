@@ -4,13 +4,14 @@
 
         <div class="chats-panel beautiful-bg-2 no-select">
             <div class="chats-creating">
-            <q-btn class="add-group-btn" color="primary" outline icon="add" label="групповой чат" @click="creatingChat = true"/>
+            <q-btn class="add-group-btn" color="primary" outline icon="add" label="групповой чат" @click="creatingGroupChat = true; userRequest = ''"/>
             <q-input class="user-search" dense rounded outlined label="Поиск" v-model="userRequest" color="primary" :loading="isLoading" />
             </div>
 
             <div v-if="chats.length > 0 && userRequest.trim() === ''">
             <div class="chat-card" v-for="chat in chats" :key="chat.id" style="color: black;" @click="setCurrentChat(chat); void nextTick(() => scrollToBottomInstant())">
-                <img class="user-avatar" :src="getParticipantAvatar(chat)" />
+                <img v-if="!chat.isGroup" class="user-avatar" :src="getParticipantAvatar(chat)" />
+                <img v-else-if="chat.isGroup" class="user-avatar" :src="getChatAvatar(chat.id)" />
                 <div class="chat-info">
                     <div class="chat-header">
                     <p class="chat-title" v-if="!chat.isGroup">{{ getChatParticiapnt(chat)?.firstname }} {{ getChatParticiapnt(chat)?.lastname }}</p>
@@ -18,21 +19,29 @@
                     <p class="chat-date" v-if="getLastMessageContent(chat.id)">{{ formatSmartDate(getLastMessageTime(chat.id)) }}</p>
                     </div>
 
+                    <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
                     <p class="chat-last-message" v-if="!chat.isGroup && getLastMessageContent(chat.id)">{{ getLastMessageContent(chat.id) }}</p>
                     <p class="chat-last-message" v-else-if="chat.isGroup && chat.messages && getLastMessageSenderId(chat.id) !== user!.id "><strong>{{ getLastMessageSender(chat.id) }}:</strong> {{ getLastMessageContent(chat.id) }}</p>
                     <p class="chat-last-message" v-else-if="chat.messages && getLastMessageSenderId(chat.id) === user!.id"><strong>Вы:</strong> {{ getLastMessageContent(chat.id) }}</p>
+                    <q-icon :name="getLastMessageIsRead(chat.id) ? 'done_all' : 'check'" v-if="chat.messages && getLastMessageSenderId(chat.id) === user!.id" 
+                    style="margin-right: 20px;" size="18px" color="primary"/>
+                    <p v-else-if="chat.messages && getLastMessageSenderId(chat.id) !== user!.id && getUnreadCount(chat.id) !== 0"
+                    class="unread-in-chat">{{ getUnreadCount(chat.id) }}</p>
+                    </div>
                 </div>
             </div>
             </div>
 
             <div v-else-if="userRequest.trim() !== ''" class="search-results-container">
                 <div class="search-results-scroll">
-                <div class="chat-card" v-for="user in searchResults" :key="user.id" @click="currentChat = undefined; beginingChat = true; selectedUser = user">
-                <img class="user-avatar" :src="getAvatarUrl(user.id)" />
+                <div  v-for="user in searchResults" :key="user.id" @click="currentChat = undefined; beginingChat = true; selectedUser = user">
+                <div class="chat-card" v-if="notHaveChat(user.id)">
+                  <img class="user-avatar" :src="getAvatarUrl(user.id)" />
                 <div class="chat-info">
                     <div class="chat-header">
                         <p class="chat-title">{{ user.firstname }} {{ user.lastname }}</p>
                     </div>
+                </div>
                 </div>
                 </div>
             </div>
@@ -48,7 +57,8 @@
 
                 <div class="messages-header">
                   <div style="display: flex; flex-direction: row; align-items: center;">
-                    <img class="user-avatar" :src="getParticipantAvatar(currentChat)" />
+                    <img v-if="!currentChat.isGroup" class="user-avatar" :src="getParticipantAvatar(currentChat)" />
+                    <img v-else-if="currentChat.isGroup" class="user-avatar" :src="getChatAvatar(currentChat.id)" />
                     <div>
                     <p class="chat-header-title onHover" v-if="currentChat.isGroup" @click="showChatDetails = true">{{ currentChat.name }}</p>
                     <p class="chat-header-title" v-else-if="!currentChat.isGroup">{{ getParticiapnt()?.firstname }} {{ getParticiapnt()?.lastname }}</p>
@@ -116,7 +126,7 @@
                 </div>
 
                 <div class="input-message-panel">
-                    <q-input class="input-message" borderless v-model="myMessage" dense/>
+                    <q-input class="input-message" borderless v-model="myMessage" dense :label="shadowText" @keyup.enter="myMessage.trim() !== '' && sendMessage(currentChat.id, myMessage)"/>
                     <q-btn class="send-btn" :disable="myMessage.trim() === '' ? true : false" flat round icon="send" @click="sendMessage(currentChat.id, myMessage)" />
                 </div>
             </div>
@@ -130,7 +140,7 @@
                 </div>
                 <div class="messages-container" />
                 <div class="input-message-panel">
-                    <q-input class="input-message" borderless v-model="myMessage" dense/>
+                    <q-input class="input-message" borderless v-model="myMessage" dense :label="shadowText" @keyup.enter="myMessage.trim() !== '' && createPrivateChat(selectedUser.id)"/>
                     <q-btn class="send-btn" :disable="myMessage.trim() === '' ? true : false" flat round icon="send" @click="createPrivateChat(selectedUser!.id)" />
                 </div>
             </div>
@@ -141,18 +151,66 @@
         </div>
     </div>
 
-    <q-dialog v-model="creatingChat">
-        <p>да</p>
+    <q-dialog v-model="creatingGroupChat" @before-hide="creatingChatName = ''; addingParticipant = false; creatingSelectedUsers = []; addParticipantRequest = ''" 
+    @before-show="addingParticipant = true">
+        <q-list class="chat-details">
+          <p class="participants-title">Введите название чата</p>
+          <q-input outlined label="название" v-model="creatingChatName" 
+          style="width: 80%;margin-top: 10px;"
+          :rules="[val => !!val || 'Введите название чата']"/>
+
+          <p class="participants-title">Выберите участников чата</p>
+
+          <div v-if="addingParticipant" style="width: 90%; display: flex; flex-direction: column; align-items: center;">
+        <q-input class="user-search" dense rounded outlined label="Поиск" v-model="addParticipantRequest" color="primary" :loading="isLoading" />
+
+        <div v-if="addParticipantRequest.trim() !== ''" class="adding-participants-list search-results-scroll">
+          <div v-for="user in searchResults" :key="user.id">
+            <div v-if="itsNotMe(user.id)" class="participants-intersection">
+            <img class="user-avatar" :src="getAvatarUrl(user.id)" />
+            <div style="display: flex; flex-direction: column;">
+              <p>{{ user.firstname }} {{ user.lastname }}</p>
+              <p>{{ user.mail }}</p>
+            </div>
+            <q-checkbox keep-color v-model="creatingSelectedUsers" :val="user" color="secondary" />
+          </div>
+          </div>
+        </div>
+
+        
+
+        <div class="selected-users">
+          <p v-for="user in creatingSelectedUsers" :key="user.id">{{ user.firstname }} {{ user.lastname }}<span v-if="creatingSelectedUsers.indexOf(user) !== selectedUsers.length">, </span></p>
+          <p>Вы<span v-if="creatingSelectedUsers.length !== 0">, </span></p>
+          <p><strong>Состав чата: </strong></p>
+        </div>
+
+        <q-btn filled color="primary" label="создать"
+        style="width: 200px; border-radius: 10px; margin-top: 20px;"
+        :disable="creatingSelectedUsers.length === 0 || creatingChatName === ''" 
+        @click="createGroupChat()"/>
+        </div>
+        </q-list>
     </q-dialog>
 
-    <q-dialog v-model="showChatDetails">
-      <q-list class="chat-details">
+    <q-dialog v-model="showChatDetails" @before-hide="addParticipantRequest = ''; addingParticipant = false; changingChatName = false; newChatName = ''">
+      <q-list class="chat-details search-results-scroll">
         <div style="display: flex; flex-direction: row; align-items: center;">
-          <img class="user-avatar" :src="avatar_alt" style="height: 100px; margin-right: 20px;"/>
+          <input
+            type="file"
+            ref="fileInput"
+            @change="handleFileUpload"
+            accept="image/*"
+            style="display: none"
+          />
+          <img class="user-avatar" :src="getChatAvatar(currentChat!.id)" style="height: 100px; margin-right: 20px; cursor: pointer;" @click="triggerFileInput"/>
           <div style="display: flex; flex-direction: column; align-items: center;">
 
             <transition name="fade" mode="out-in">
-            <p v-if="!changingChatName" class="chat-title">{{ currentChat?.name }} <q-icon name="edit" v-if="currentChat?.createdBy.id === user!.id" size="18px" class="edit-name-btn" @click="changingChatName = true; newChatName = currentChat.name!"/></p>
+              <div v-if="!changingChatName" style="display: flex; flex-direction: row;">
+            <p class="chat-title">{{ currentChat?.name }}</p>
+            <q-icon name="edit" color="primary" v-if="currentChat" size="18px" class="edit-name-btn" @click="changingChatName = true; newChatName = currentChat.name!"/>
+            </div>
             <div v-else-if="changingChatName" style="display: flex; flex-direction: column;">
             <q-input dense  v-model="newChatName" style="width: 300px;" color="primary" input-style="color: #41789C; margin: 0; font-size: 16px;"/>
             <div style="display: flex; flex-direction: row; justify-content: space-evenly; margin-top: 20px; margin-bottom: 10px;">
@@ -165,6 +223,7 @@
             <p class="participants-count" style="color: #41789C;">{{ currentChat?.participants.length }} {{ participantsInterpritaion(currentChat!.participants.length) }}</p>
           </div>
         </div>
+        <p class="participants-title">Участники</p>
         <div class="participants-list">
           <div class="participant-big-block" v-for="participant in currentChat?.participants" :key="participant.id" :class="{hovered: isHovered[participant.id]}">
           <div class="participant-block">
@@ -179,6 +238,34 @@
           @click="selectedParticipant = participant; deletingParticipant = true"
           />
           </div>
+        </div>
+
+        <q-btn v-if="currentChat?.createdBy.id === user!.id" color="primary" :filled="addingParticipant ? false : true"
+        :outline="addingParticipant ? true : false"
+        :label="addingParticipant ? 'отмена' : 'добавить участника'"
+        style="width: 200px; border-radius: 10px; margin-top: 50px;" 
+        @click="addingParticipant = !addingParticipant; addParticipantRequest = ''"/>
+
+        <div v-if="addingParticipant" style="width: 90%; display: flex; flex-direction: column; align-items: center;">
+        <q-input class="user-search" dense rounded outlined label="Поиск" v-model="addParticipantRequest" color="primary" :loading="isLoading" />
+
+        <div v-if="addParticipantRequest.trim() !== ''" class="adding-participants-list search-results-scroll">
+          <div v-for="user in searchResults" :key="user.id">
+            <div v-if="notInChat(user.id)" class="participants-intersection">
+            <img class="user-avatar" :src="getAvatarUrl(user.id)" />
+            <div style="display: flex; flex-direction: column;">
+              <p>{{ user.firstname }} {{ user.lastname }}</p>
+              <p>{{ user.mail }}</p>
+            </div>
+            <q-checkbox keep-color v-model="selectedUsers" :val="user.id" color="secondary" />
+          </div>
+          </div>
+        </div>
+
+        <q-btn filled color="primary" label="добавить"
+        style="width: 200px; border-radius: 10px; margin-top: 20px;"
+        :disable="selectedUsers.length === 0" 
+        @click="addParticipants()"/>
         </div>
       </q-list>
     </q-dialog>
@@ -355,6 +442,7 @@
     display: flex;
     flex-direction: row;
     flex-shrink: 0;
+    border-top: 1px solid #41789C;
 }
 
 .input-message {
@@ -554,6 +642,7 @@ img.q-message-avatar[src*="blob:"] {
   align-items: center;
   padding: 30px;
   border-radius: 10px;
+  overflow-x: hidden;
 }
 
 .edit-name-btn {
@@ -618,6 +707,68 @@ img.q-message-avatar[src*="blob:"] {
   font-size: 18px;
 }
 
+.participants-title {
+  margin: 0;
+  margin-top: 20px;
+  font-size: 20px;
+  color: #41789C;
+}
+
+.adding-participants-list {
+  max-height: 25vh;
+  width: 100%;
+  overflow: auto;
+  overflow-x: hidden;
+  background-color:#E0EEF8;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.participants-intersection {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #41789C;
+  background-color: #41789C;
+  padding: 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    text-align: center;
+    color: #E0EEF8;
+  }
+}
+
+.selected-users {
+  display: flex;
+  flex-direction: row-reverse;
+  white-space: pre;
+  margin-top: 20px;
+  max-width: 80%;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+
+  p {
+    font-size: 16px;
+    color: #41789C;
+  }
+}
+
+.unread-in-chat {
+  margin: 0;
+  margin-right: 20px;
+  padding-left: 6px;
+  padding-right: 6px;
+  background-color: #41789C;
+  color: #E0EEF8;
+  font-size: 14px;
+  border-radius: 100%;
+}
+
 </style>
 
 <script setup lang="ts">
@@ -635,6 +786,7 @@ import { nextTick } from 'process';
 import { debounce } from 'quasar';
 import { AuthService } from 'src/services/auth.service';
 import { participantsInterpritaion } from 'src/services/interpritation.service';
+import chat_alt from '../assets/1af82c8ed1916d70e58f662999ce7461.jpg'
 
 const user = useUserStore().getUser
 
@@ -646,7 +798,7 @@ const chats = computed(() => socketStore.chats)
 const messages = computed(() => socketStore.messages)
 const chatting = computed(() => socketStore.chatting)
 
-const creatingChat = ref<boolean>(false)
+const creatingGroupChat = ref<boolean>(false)
 const isScrolledToBottom = ref<boolean>(true)
 const userRequest = ref<string>('')
 const isLoading = ref<boolean>(false)
@@ -658,6 +810,61 @@ const changingChatName = ref<boolean>(false)
 const newChatName = ref<string>('')
 const deletingParticipant = ref<boolean>(false)
 const selectedParticipant = ref<IUser>()
+const addingParticipant = ref<boolean>(false)
+const addParticipantRequest = ref<string>('')
+const selectedUsers = ref<number[]>([])
+const creatingSelectedUsers = ref<IUser[]>([])
+const creatingChatName = ref<string>('')
+
+const shadowText = ref<string>('Сообщение')
+
+const fileInput = ref<HTMLInputElement | null>(null); // Явно указываем тип
+
+const triggerFileInput = () => {
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
+};
+
+const getChatAvatar = (chatId: number) => {
+  if (chatAvatar.value[chatId]) {
+    return chatAvatar.value[chatId]
+  }
+  return chat_alt
+}
+
+const chatAvatar = computed(() => socketStore.chatAvatars)
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (!file) return;
+
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    // Для чатов (если currentChat.value существует)
+    if (currentChat.value) {
+      await instance.post(`chat/avatar/${currentChat.value.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } 
+
+      toast.success('Аватар чата обновлён!');
+  } catch (error: any) {
+    console.error('Ошибка загрузки аватара:', error);
+    toast.error(error.response?.data?.message || 'Ошибка загрузки');
+  } finally {
+    // Сбрасываем input, чтобы можно было загрузить тот же файл снова
+    if (fileInput.value) {
+      fileInput.value.value = '';
+    }
+  }
+};
 
 const isHovered = ref<Record<number, boolean>>({})
 
@@ -672,6 +879,12 @@ const getLastMessageContent = (chatId: number) => {
     const chatMessages = messages.value[chatId]
     if (!chatMessages || chatMessages.length === 0) return ''
     return chatMessages[chatMessages.length - 1]?.content || ''
+}
+
+const getLastMessageIsRead = (chatId: number) => {
+  const chatMessages = messages.value[chatId]
+  if (!chatMessages || chatMessages.length === 0) return false
+  return chatMessages[chatMessages.length - 1]?.isRead
 }
 
 const getLastMessageTime = (chatId: number) => {
@@ -716,6 +929,11 @@ const getNextSenderId = (message: IMessage) => {
 
   const prevMessage = chatMessages[messageIndex + 1];
   return prevMessage!.sender.id !== message.sender.id;
+}
+
+const itsNotMe = (userId: number) => {
+  if (userId === user!.id) return false
+  return true
 }
 
 const loadAvatar = async (userId: number) => {
@@ -766,6 +984,22 @@ const setCurrentChat = (chat: IChat) => {
   });
 };
 
+const notHaveChat = (userId: number) => {
+  let flag = true
+
+  chats.value.forEach(chat => {
+    if (!chat.isGroup) {
+      chat.participants.forEach(p => {
+        if (p.id === userId) {
+          flag = false
+        }
+      })
+    }
+  })
+
+  return flag
+}
+
 const handleScroll = debounce(() => {
   const container = document.querySelector('.messages-container');
   if (!container) return;
@@ -801,6 +1035,39 @@ const sendMessage = async (chatId: number, content: string) => {
         const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
         toast.error(errorMessage);
     }
+}
+
+const getUnreadCount = (chatId: number) => {
+  const chatMessages = messages.value[chatId]
+  if (!chatMessages || chatMessages.length === 0) return 0
+
+  let count = 0
+
+  chatMessages.forEach(m => {
+    if (!m.isRead) count += 1
+  })
+
+  return count
+}
+
+const createGroupChat = async () => {
+  try {
+    const userIds: number[] = []
+
+    creatingSelectedUsers.value.forEach(user => userIds.push(user.id))
+
+    const chat = (await instance.post('chat/group', {name: creatingChatName.value, userIds})).data
+
+    socketStore.chats.unshift(chat)
+
+    creatingGroupChat.value = false
+
+    toast.success('Групповой чат создан')
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
 }
 
 const checkVisibleMessages = debounce(() => {
@@ -850,7 +1117,6 @@ const markAsRead = async (messageId: number) => {
 
     // 1. Сначала обновляем локально
     socketStore.markMessageAsRead(chatId, messageId);
-    console.log('пометил')
     
     // 2. Затем отправляем на сервер
     await instance.patch(`chat/${messageId}`);
@@ -862,6 +1128,18 @@ const markAsRead = async (messageId: number) => {
   } finally {
     processingMessages.delete(messageId);
   }
+}
+
+const notInChat = (userId: number) => {
+  let flag = true
+
+  if (!currentChat.value) return
+
+  currentChat.value.participants.forEach(p => {
+    if (p.id === userId) flag = false
+  })
+
+  return flag
 }
 
 const smoothScrollToBottom = () => {
@@ -896,7 +1174,11 @@ const debouncedSearch = debounce(async (query) => {
   
   try {
     isLoading.value = true;
+    if(userRequest.value !== '')
     searchResults.value = (await instance.get(`user/search/${userRequest.value}`)).data;
+
+    else if(addParticipantRequest.value !== '')
+    searchResults.value = (await instance.get(`user/search/${addParticipantRequest.value}`)).data
 
     searchResults.value.forEach(user => {
         if (!avatarUrls.value[user.id]) {
@@ -932,6 +1214,28 @@ const removeParticipant = async () => {
   }
 }
 
+const addParticipants = async () => {
+  try {
+    if (!currentChat.value || !selectedUsers.value) return
+
+    const chatId = currentChat.value.id
+    const userIds = selectedUsers.value
+
+    await instance.patch('chat/add', {chatId, userIds})
+
+    addingParticipant.value = false
+    addParticipantRequest.value = ''
+    selectedUsers.value = []
+
+    toast.success('Пользователи добавлены в чат')
+
+  }
+  catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Произошла ошибка';
+        toast.error(errorMessage);
+  }
+}
+
 const getParticiapnt = () => {
     return currentChat.value?.participants.filter(p => p.id !== user!.id)[0]
 }
@@ -949,6 +1253,7 @@ const createPrivateChat = async (user2Id: number) => {
         currentChat.value = chat
 
         beginingChat.value = false
+        userRequest.value = ''
 
         if (currentChat.value)
         void sendMessage(currentChat.value?.id, myMessage.value)
@@ -983,6 +1288,10 @@ watch(userRequest, (newVal) => {
   debouncedSearch(newVal);
 });
 
+watch(addParticipantRequest, (newVal) => {
+  debouncedSearch(newVal)
+})
+
 watch(() => chats.value, (chats) => {
     chats.forEach(chat => {
         chat.participants.filter(p => p.id !== user!.id).forEach(user => {
@@ -1002,7 +1311,10 @@ watch(() => myMessage.value, async() => {
     }
     else if (myMessage.value.trim() === '' && currentChat.value) {
         await instance.post(`chat/stopchatting/${currentChat.value?.id}`)
+        
     }
+    if (myMessage.value.trim() !== '') shadowText.value = ''
+    else if (myMessage.value.trim() === '') shadowText.value = 'Сообщение'
 })
 
 watch(() => [...chats.value], (newChats) => {
@@ -1013,10 +1325,10 @@ watch(() => [...chats.value], (newChats) => {
 }, { deep: true });
 
 watch(() => chats.value.find(c => c.id === currentChat.value?.id), (newChat) => {
-  if (newChat && currentChat.value && newChat.name !== currentChat.value?.name && newChat.name) {
+  if (newChat && currentChat.value?.isGroup && currentChat.value && newChat.name !== currentChat.value?.name && newChat.name) {
     currentChat.value.name = newChat.name
   }
-  if (newChat && currentChat.value && newChat.participants !== currentChat.value.participants) {
+  if (newChat && currentChat.value?.isGroup && currentChat.value && newChat.participants.length !== currentChat.value.participants.length) {
     currentChat.value.participants = newChat.participants
   }
 })

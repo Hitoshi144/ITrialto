@@ -1,8 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, BadRequestException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, BadRequestException, Query, UploadedFile, UseInterceptors, StreamableFile, NotFoundException } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { createReadStream, existsSync } from 'fs';
+import { diskStorage } from 'multer';
+import { join } from 'path';
+import * as sharp from 'sharp'
+import * as fs from 'fs'
+import { Socket } from 'dgram';
+import { SocketService } from 'src/socket/socket.service';
 
 @Controller('chat')
 export class ChatController {
@@ -73,6 +81,62 @@ export class ChatController {
       throw new BadRequestException(error.message)
     } 
   }
+
+  @Post('avatar/:chatId')
+@UseGuards(JwtAuthGuard)
+@UseInterceptors(FileInterceptor('avatar', {
+  storage: diskStorage({
+    destination: './uploads/chats',
+    filename: (req, file, cb) => {
+      // Убираем .jpg здесь, так как sharp добавит его
+      cb(null, `${req.params.chatId}`);
+    }
+  })
+}))
+async uploadChatAvatar(
+  @Param('chatId') chatId: string,
+  @UploadedFile() file: Express.Multer.File,
+) {
+  const outputPath = join(process.cwd(), 'uploads', 'chats', `${file.filename}.jpg`);
+  
+  await sharp(file.path)
+    .resize({
+      width: 200,
+      height: 200,
+      fit: 'cover',
+      position: 'center'
+    })
+    .jpeg({ quality: 90 })
+    .toFile(outputPath);
+
+  // Удаляем временный файл без расширения
+  if (existsSync(file.path)) {
+    await fs.promises.unlink(file.path);
+  }
+
+  const chat = await this.chatService.getChatById(Number(chatId))
+  if (!chat) throw new NotFoundException('Чат не найден');
+  
+  chat.participants.forEach(user => {
+    this.chatService.deliverNewAvatar(user.id, chat.id)
+  })
+
+  return { message: 'Chat avatar uploaded successfully' };
+}
+
+@Get('avatar/:chatId')
+getChatAvatar(@Param('chatId') chatId: string) {
+  const avatarPath = join(process.cwd(), 'uploads', 'chats', `${chatId}.jpg`);
+  
+  if (!existsSync(avatarPath)) {
+    return null;
+  }
+
+  return new StreamableFile(createReadStream(avatarPath), {
+    type: 'image/jpeg',
+    disposition: `inline; filename="${chatId}.jpg"`
+  });
+}
 
   @UseGuards(JwtAuthGuard)
   @Get('unread')

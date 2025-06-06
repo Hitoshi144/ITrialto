@@ -109,15 +109,17 @@ export class ChatService {
         createdBy: creator
       })
 
+      const result = await this.chatRepository.save(chat)
+
       userIds.forEach(userId => {
-        const isDelivered = this.socketService.sendToUser(userId, 'newChat', chat)
+        const isDelivered = this.socketService.sendToUser(userId, 'newChat', result)
 
         if (!isDelivered) {
           console.warn(`User ${userId} is not currently connected via WebSocket`);
         }
       })
 
-      return await this.chatRepository.save(chat)
+      return result
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -154,18 +156,29 @@ export class ChatService {
       )
 
       const newParticipants = users.filter(user => !chat.participants.some(p => p.id === user.id))
+      const oldParticipants = chat.participants.filter(user => !userIds.some(p => p === user.id))
 
       chat.participants = [...chat.participants, ...newParticipants]
 
+      const result = await this.chatRepository.save(chat)
+
       userIds.forEach(userId => {
-        const isDelivered = this.socketService.sendToUser(userId, 'newChat', chat)
+        const isDelivered = this.socketService.sendToUser(userId, 'newChat', result)
 
         if (!isDelivered) {
           console.warn(`User ${userId} is not currently connected via WebSocket`);
         }
       })
 
-      return await this.chatRepository.save(chat)
+      oldParticipants.forEach(old => {
+        const isDelivered = this.socketService.sendToUser(old.id, 'newParticipant', result)
+
+        if (!isDelivered) {
+          console.warn(`User ${old.id} is not currently connected via WebSocket`);
+        }
+      })
+
+      return result
     }
     catch (error: any) {
       throw new BadRequestException(error.message)
@@ -187,19 +200,24 @@ export class ChatService {
         throw new BadRequestException('Cannot remove participants from private chat')
       }
 
-      console.log(userIds)
-      console.log(chatId)
-
       chat.participants = chat.participants.filter(user => !userIds.includes(user.id))
 
       const result =  await this.chatRepository.save(chat)
 
 
       userIds.forEach(userId => {
-        const isDelivered = this.socketService.sendToUser(userId, 'participantRemovedFromChat', result)
+        const isDelivered = this.socketService.sendToUser(userId, 'removedFromChat', result)
 
         if (!isDelivered) {
           console.warn(`User ${userId} is not currently connected via WebSocket`);
+        }
+      })
+
+      result.participants.forEach(user => {
+        const isDelivered = this.socketService.sendToUser(user.id, 'participantRemovedFromChat', result)
+
+        if (!isDelivered) {
+          console.warn(`User ${user.id} is not currently connected via WebSocket`);
         }
       })
 
@@ -225,7 +243,7 @@ export class ChatService {
     chat.name = name;
     const result = await this.chatRepository.save(chat);
 
-    chat.participants.filter(p => p.id !== chat.createdBy.id).forEach(user => {
+    chat.participants.forEach(user => {
       const isDelivered = this.socketService.sendToUser(user.id, 'newName', result)
 
       if (!isDelivered) {
@@ -433,5 +451,14 @@ export class ChatService {
     chat.participants.filter(p => p.id !== userId).forEach(user => {
       this.socketService.sendToUser(user.id, 'stopChatting', chat.id)
     })
+  }
+
+  deliverNewAvatar(userId: number, chatId: number) {
+    try {
+      this.socketService.sendToUser(userId, 'newChatAvatar', chatId)
+    }
+    catch (error) {
+      throw new BadRequestException(error.message)
+    }
   }
 }

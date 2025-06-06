@@ -6,6 +6,8 @@ import type { IChat, IMessage, INotification } from 'src/types/types';
 import { generateId } from 'src/helpers/generate.helper';
 import { scrollToBottom } from 'src/services/scroll.service';
 import { nextTick } from 'vue';
+import defaultChatAvatar from '../assets/1af82c8ed1916d70e58f662999ce7461.jpg'
+import { instance } from 'src/api/axios.api';
   /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const useSocketStore = defineStore('socket', {
@@ -15,7 +17,9 @@ export const useSocketStore = defineStore('socket', {
     hasNewNotification: false,
     chats: [] as IChat[],
     messages: {} as Record<number, IMessage[]>,
-    chatting: {} as Record<number, boolean>
+    chatting: {} as Record<number, boolean>,
+    chatAvatars: {} as Record<number, string>,
+    defaultChatAvatar,
   }),
   
   actions: {
@@ -40,6 +44,8 @@ export const useSocketStore = defineStore('socket', {
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           )
         }))
+
+        await this.loadChatAvatars();
       }
       catch (error: any) {
         console.error('Не удалось загрузить уведомления: ', error)
@@ -111,6 +117,19 @@ export const useSocketStore = defineStore('socket', {
     })
     socketAPI.subscribe('participantRemovedFromChat', (chat: IChat) => {
       this.participantRemoved(chat)
+    })
+    socketAPI.subscribe('newParticipant', (chat: IChat) => {
+      this.participantAdded(chat)
+    })
+    socketAPI.subscribe('newChatAvatar', (chatId: number) => {
+      void (async () => {
+      const response = await instance.get(`chat/avatar/${chatId}`, {
+        responseType: 'blob'
+      })
+      const blobUrl = URL.createObjectURL(response.data)
+
+      this.updateChatAvatar(chatId, blobUrl)
+    })()
     })
     },
     
@@ -192,7 +211,7 @@ export const useSocketStore = defineStore('socket', {
 
       const updatedChat = {
         ...currentChat,
-        partcipants: chat.participants
+        participants: chat.participants
       }
 
       const index = this.chats.indexOf(currentChat)
@@ -201,12 +220,34 @@ export const useSocketStore = defineStore('socket', {
       }
     },
 
+    participantAdded(chat: IChat) {
+      const currentChat = this.chats.find(c => c.id === chat.id)
+      if (!currentChat) return
+
+      const updatedChat = {
+        ...currentChat,
+        participants: chat.participants
+      }
+
+      const index = this.chats.indexOf(currentChat)
+      if (index !== -1) {
+        this.chats[index] = updatedChat
+      }
+
+    },
+
     addMessage(message: IMessage) {
       if (!this.messages[message.chat.id]) {
         this.messages[message.chat.id] = []
       }
 
       this.messages[message.chat.id]?.push(message)
+
+      this.chats = [...this.chats].sort((a, b) => {
+        const aLastMsg = this.messages[a.id]?.slice(-1)[0]?.createdAt || a.updatedAt;
+        const bLastMsg = this.messages[b.id]?.slice(-1)[0]?.createdAt || b.updatedAt;
+        return new Date(bLastMsg).getTime() - new Date(aLastMsg).getTime();
+      });
 
       scrollToBottom()
     },
@@ -244,6 +285,74 @@ export const useSocketStore = defineStore('socket', {
           this.chats[index] = updatedChat
         }
       }
-    }
+    },
+
+    async loadChatAvatars() {
+      try {
+        // Загружаем аватары для всех чатов
+        await Promise.all(
+          this.chats.map(async chat => {
+            if (chat.isGroup) { // Загружаем только для групповых чатов
+              const avatarBlob = await socketAPI.fetchChatAvatar(chat.id);
+              if (avatarBlob && avatarBlob?.size > 0) {
+                // Создаем Object URL из Blob
+                this.chatAvatars[chat.id] = URL.createObjectURL(avatarBlob);
+              } else {
+                this.chatAvatars[chat.id] = this.defaultChatAvatar;
+              }
+            }
+          })
+        );
+      } catch (error) {
+        console.error('Ошибка загрузки аватаров чатов:', error);
+      }
+    },
+
+    async fetchChatAvatar(chatId: number): Promise<void> {
+      try {
+        const avatarBlob = await socketAPI.fetchChatAvatar(chatId);
+        if (avatarBlob) {
+          // Освобождаем предыдущий URL, если он был
+          if (this.chatAvatars[chatId]) {
+            URL.revokeObjectURL(this.chatAvatars[chatId]);
+          }
+          this.chatAvatars[chatId] = URL.createObjectURL(avatarBlob);
+        } else {
+          this.chatAvatars[chatId] = this.defaultChatAvatar;
+        }
+      } catch (error) {
+        console.error(`Ошибка загрузки аватара чата ${chatId}:`, error);
+        this.chatAvatars[chatId] = this.defaultChatAvatar;
+      }
+    },
+
+    getChatAvatar(chatId: number): string {
+      // Если аватар уже загружен - возвращаем его
+      if (this.chatAvatars[chatId]) {
+        return this.chatAvatars[chatId];
+      }
+      
+      // Если нет - инициируем загрузку и возвращаем дефолтный
+      void this.fetchChatAvatar(chatId);
+      return this.defaultChatAvatar;
+    },
+    
+    updateChatAvatar(chatId: number, avatarUrl: string) {
+      // Освобождаем старый URL, если он был
+      if (this.chatAvatars[chatId] && this.chatAvatars[chatId] !== this.defaultChatAvatar) {
+        URL.revokeObjectURL(this.chatAvatars[chatId]);
+      }
+      
+      this.chatAvatars[chatId] = avatarUrl;
+    },
+
+    clearAvatars() {
+      Object.values(this.chatAvatars).forEach(url => {
+        if (url !== this.defaultChatAvatar) {
+          URL.revokeObjectURL(url);
+        }
+      });
+      this.chatAvatars = {};
+    },
   }
 });
