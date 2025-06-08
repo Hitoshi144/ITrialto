@@ -48,13 +48,13 @@ export default defineConfig((/* ctx */) => {
       },
 
       vueRouterMode: 'history', // available values: 'hash', 'history'
-      vueRouterBase: '/ITrialto',
+      vueRouterBase: '/ITrialto/',
       // vueDevtools,
       // vueOptionsAPI: false,
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      // publicPath: '/',
+      publicPath: '/ITrialto/',
       // analyze: true,
       // env: {},
       // rawDefine: {}
