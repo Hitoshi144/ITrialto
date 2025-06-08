@@ -31,7 +31,7 @@ class SocketAPI {
       return;
     }
   
-    this.socket = io('http://localhost:3001/ws', { // Убрали /ws из URL
+    this.socket = io('https://itrialto.onrender.com/ws', { // Убрали /ws из URL
       auth: { 
         token: this.token 
       },
