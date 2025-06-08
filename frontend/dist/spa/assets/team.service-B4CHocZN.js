@@ -1,1 +1,0 @@
-import{z as t}from"./index-Mo4dBhOw.js";const s={async loadStack(r){try{return(await t.get(`/teams/stack/${r}`)).data}catch(e){return console.error(`Ошибка загрузки стека для команды ${r}:`,e),[]}}};export{s as T};
