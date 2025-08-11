@@ -26,6 +26,12 @@ The project includes:
 
 - Private and group chats via WebSocket.
 
+Since there is no point in describing the entire essence of the project (obviously, it would take an entire essay), I decided to at least insert a visualization of the database schema. All entities and the relationships between them are described here:
+
+<div align="center">
+<img src="frontend/public/Untitled (1).png" />
+</div>
+
 ## Technologies
 
 - [![Static Badge](https://img.shields.io/badge/TypeScript-red?style=for-the-badge&logo=typescript&logoColor=3178C6&color=%23000000)](https://www.typescriptlang.org/)
