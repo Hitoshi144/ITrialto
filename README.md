@@ -45,3 +45,138 @@ Since there is no point in describing the entire essence of the project (obvious
 - [![Static Badge](https://img.shields.io/badge/typeorm-red?style=for-the-badge&logo=typeorm&logoColor=%23FE0803&color=%23f5edf0)](https://typeorm.io/)
   
 - [![Static Badge](https://img.shields.io/badge/postgresql-red?style=for-the-badge&logo=postgresql&logoColor=%234169E1&color=%23f2f0ff)](https://www.postgresql.org/)
+
+---
+
+# 🚀 Installing and running the ITrialto project
+
+## 1️⃣ Installing dependencies
+
+1. Install **Node.js LTS**
+   [📥 Download Node.js](https://nodejs.org/en/download)
+2. Restart your PC and check the installation:
+
+   ```bash
+   node --version
+   ```
+3. Clone the repository:
+
+```bash
+   git clone https://github.com/Hitoshi144/ITrialto.git
+   ```
+4. Go to the project folder:
+
+```bash
+   cd ITrialto
+   ```
+
+
+## 2️⃣ Backend configuration
+
+1. Go to the **backend** directory:
+
+```bash
+   cd backend
+   ```
+2. Install dependencies:
+
+```bash
+   npm install
+   ```
+
+⚠ If you encounter an access error, run the terminal **as an administrator** and execute:
+
+```powershell
+   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+
+## 3️⃣ Installing and configuring PostgreSQL via Docker
+
+1. Install **Docker**:
+   [📥 Download Docker](https://www.docker.com/)
+2. Run the PostgreSQL container:
+
+```bash
+   docker run -d --name vm_postgres \
+     -e POSTGRES_DB=vm_db \
+     -e POSTGRES_USER=vm_user \
+     -e POSTGRES_PASSWORD=vm_password \
+     -p 5432:5432 \
+     postgres
+   ```
+
+> You can enter your own parameters for creating a container, but keep in mind that they will need to be entered into the environment file.
+
+
+## 4️⃣ Environment configuration
+
+Create a file **`ITrialto/backend/.env`** with the following content:
+
+```env
+JWT_SECRET=jfdqnklqegjwklgjkfdhsalkjfhqkjehfqbbfqwjhkvbcasjkhdvbasjk
+
+DB_HOST=‘localhost’
+DB_PORT=5432
+DB_USERNAME=‘vm_user’
+DB_PASSWORD=‘vm_password’
+DB_NAME=‘vm_db’
+```
+
+> `JWT_SECRET` can be any set of characters.
+
+---
+
+## 5️⃣ Starting the backend
+
+In the **backend** directory, run:
+
+```bash
+npm run start:dev
+```
+
+If there are no errors, everything went well ✅
+
+
+## 6️⃣ Configuring the frontend
+
+1. In the **`frontend/src/api/axios.api.ts`** file, replace:
+
+```ts
+baseURL: 'http://localhost:3001'
+```
+
+2. In the **`frontend/src/api/socket.api.ts`** file, replace:
+
+```ts
+this.socket = io('http://localhost:3001/ws')
+```
+
+
+## 7️⃣ Launching the frontend
+
+1. Open a second terminal.
+2. Go to the **frontend** directory:
+
+```bash
+   cd ITrialto/frontend
+   ```
+3. Install dependencies:
+
+```bash
+   npm install
+   ```
+4. launch frontend:
+
+```bash
+npm run dev
+```
+
+---
+
+## 🎉 Done!
+
+Now you can open the project in your browser and start exploring it 🚀
+
+
+At this point, the project is complete, but it has potential for further refinement and development.
