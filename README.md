@@ -180,3 +180,9 @@ Now you can open the project in your browser and start exploring it 🚀
 
 
 At this point, the project is complete, but it has potential for further refinement and development.
+
+---
+
+## License
+
+Distributed under the **MIT** License. See [`LICENSE`](https://github.com/Hitoshi144/ITrialto/blob/main/LICENSE) for more information.
