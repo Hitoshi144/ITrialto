@@ -32,6 +32,10 @@ Since there is no point in describing the entire essence of the project (obvious
 <img src="frontend/public/Untitled (1).png" />
 </div>
 
+<p></p>
+
+> You can also watch a [video](https://youtu.be/kNvPWcEjRgw) about this project.
+
 ## Technologies
 
 - [![Static Badge](https://img.shields.io/badge/TypeScript-red?style=for-the-badge&logo=typescript&logoColor=3178C6&color=%23000000)](https://www.typescriptlang.org/)
